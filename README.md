@@ -18,6 +18,8 @@ Point it at a folder of training images and it flags the things that quietly cor
 
 Claude (Haiku 4.5 on Bedrock) then reviews every finding and decides what to quarantine, answering through a forced tool call so its output always matches a fixed schema.
 
+**For borderline pairs, Claude looks before it decides.** When an edited-copy match sits where the detector's own numbers can't separate real copies from false ones (under 35 inliers, or keypoints covering under a quarter of a photo), Claude gets both photos plus two OpenCV tools: a thumbnail, and a full-resolution zoom into any region it picks (`winnow/zoom.py`). It answers one question per pair, same or different, and code applies the removal rule. Claude can **dispute** a flag but never clear one: a disputed photo stays removed unless you click Keep, with Claude's reason and the regions it zoomed into shown on the card. The zoomed regions are stored as coordinates, never pixels, and your browser redraws them from your own copy of the photo.
+
 ## Architecture
 
 ![Winnow architecture: two entry paths (bulk S3 scan, public website upload) both feed the same ECS Fargate task, which runs the detectors and the Claude agent, writes results to S3, and serves them through CloudFront](winnow/architecture.svg)
@@ -54,7 +56,7 @@ For the bulk S3 path, upload your photos to `samples/`, then upload an empty `sa
 docker build --target test winnow/
 ```
 
-Runs 43 tests inside the exact runtime image (same OpenCV 5 build, same embedding model): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id mapping, cut-off replies, the findings cap), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps). Production builds skip this stage, so the deployed image carries no test code. To check the tests can actually fail, three deliberate bugs were introduced (a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap), and the suite caught each one.
+Runs 62 tests inside the exact runtime image (same OpenCV 5 build, same embedding model): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id mapping, cut-off replies, the findings cap), the visual review loop (per-pair zoom budgets, the forced final decision, bad zoom requests bounced back to the model, the rule that Claude can dispute but not clear a flag), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps). Production builds skip this stage, so the deployed image carries no test code. To check the tests can actually fail, three deliberate bugs were introduced (a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap), and the suite caught each one.
 
 Dependencies are pinned in `winnow/requirements.txt`, and the embedding model is downloaded at build time with a checksum check (`ADD --checksum`) then trimmed by `winnow/models/make_embedder.py`.
 
@@ -79,6 +81,16 @@ All on real photos from [Imagenette](https://github.com/fastai/imagenette). Scri
 
 The audit found a flaw in Winnow itself, and fixing it is the point of running one: at 20 photos the collision is rare, but at dataset scale it's guaranteed.
 
+**Letting Claude look at borderline pairs** (`review_band.py`, `review_eval.py`). Among the audit's keypoint-verified flags, 12 of 19 false matches and 26 of 76 real leaks sat at 25–34 inliers, so the detector's own score can't separate them there. Adding "keypoints cover under a quarter of a photo" catches 3 more false matches (15 of 19). Every audit pair that gate selects (51: 36 real leaks, 15 false matches) was then run through the live agent against real Bedrock and scored against the verified verdicts. It took three versions:
+
+| Version | False matches caught | Real leaks wrongly doubted | Real leaks let through |
+|---|---|---|---|
+| 1. Claude decides keep/remove per photo | 7/15 | — | **15/36** |
+| 2. Claude can only dispute, per photo | 9/15 | 18/36 | 0 |
+| 3. Claude gives one verdict per pair; code applies the rule | **9/15** | **2/36** | **0** |
+
+Version 1 was worse than no review: it treated burst shots of the same moment as different photos and let 15 real leaks through. That's why Claude can dispute a flag but never clear one. Version 2's doubts were right only 33% of the time, mostly because Claude mixed up *which* photo the rule removes. Version 3 separates judgment from policy, and 9 of its 11 disputes (82%) were right. It costs $0.005 per reviewed pair, and it was measured on 160px photos, where there's little to zoom into.
+
 **Real leaks found in Imagenette itself, at smaller scale.** Across 500,000 train × test pairs, only 2 unplanted pairs were flagged. Both are genuine cross-split duplicates in Imagenette's official split: the same street performer from one burst of photos, and the same garbage truck from a second angle. That's also why accuracy after cleanup (24.4%) lands just below the "clean" baseline: the baseline was itself slightly inflated by those two.
 
 **Why two stages?** (`semantic_eval.py`, `calibrate_verify.py`) Embeddings alone looked perfect on 4,950 pairs, but at 500,000 pairs different photos of the same subject (two men holding the same kind of fish, two garbage trucks) scored up to 0.906. Adding the SIFT + RANSAC check cut 1,772 look-alike candidates down to those 2 real duplicates, while true copies matched with medians of 84–311 keypoints.
@@ -90,7 +102,7 @@ An earlier, smaller check (`run_experiment.py`): 10/10 planted exact leaks caugh
 - `winnow/` — the actual pipeline (detectors, S3 glue, Bedrock agent, Dockerfile, task definition, dashboard)
 - `winnow/api/` — the upload API Lambda and its one-time deploy script
 - `spike/` — the original dependency spike proving OpenCV 5 + `img_hash` work on ARM64 before building anything else
-- `imagenette_exp/` — the real-data evaluations: leak impact, hash vs. embedding comparison, keypoint-threshold calibration
+- `imagenette_exp/` — the real-data evaluations: leak impact, hash vs. embedding comparison, keypoint-threshold calibration, the full audit, and the visual-review band and evaluation
 - `proposal.md` / `Winnow-OpenCV-2026-Proposal.pdf` — the original competition proposal
 
 ## Limitations & future work
@@ -99,6 +111,7 @@ An earlier, smaller check (`run_experiment.py`): 10/10 planted exact leaks caugh
 - **Some thresholds are calibrated, others aren't**: the edited-copy thresholds (0.80 similarity, 25 keypoints) were calibrated on Imagenette, which is still one dataset. `sharpness ≤ 200` is a fixed number, so it depends on resolution: it can flag plain-background shots and miss soft focus in large photos. A per-dataset relative threshold would be better.
 - **Flags are for human review, not automatic deletion, at dataset scale**: 20% of the keypoint-stage flags in the full audit were look-alikes sharing a stock template or landmark. The website's previews and Keep/Remove overrides exist for exactly this.
 - ~~The keypoint check recomputes features per pair~~ — **fixed**: SIFT features are now cached per photo (`_keypoints_for` in `winnow/semantic.py`), so a photo compared against many others only pays that cost once instead of once per pair. This was the dominant cost in the full audit below.
+- **The visual review is only measured at 160px**: all 51 evaluation pairs are Imagenette's small version, and uploads to the site are usually full resolution, where zooming has more to find. Its remaining misses are "same product model, different product photo" (3 chainsaw catalog pairs), the same church on a different day, and two garbage trucks. It only runs on scans with ≤ 8 findings and at most 2 pairs per scan, which keeps a scan's worst-case cost close to the text-only one.
 - **Heavily compressed crops can slip through**: a copy that's both cropped and heavily recompressed may fail both the hash and the keypoint check (2 of 75 planted leaks were missed).
 - **Photo previews exist only in the tab you scanned from**: they're drawn from your own files in the browser, never from a public copy, so reloading a shared result link shows the report without thumbnails.
 - **Bedrock agent has a one-time setup dependency**: AWS requires each account to submit a "use case" form to Anthropic before the model can be invoked; this is a one-time manual step, not something the pipeline can do for itself.

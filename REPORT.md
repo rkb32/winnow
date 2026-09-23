@@ -7,6 +7,7 @@ Ranjeeth Burujula, solo entrant · [github.com/rkb32](https://github.com/rkb32) 
 
 1. **An AI-reviewer ensemble as a verification layer for the detector's own output.** Every one of the 108 pairs the full audit flagged was independently judged by three Claude agents given different adversarial framings — one neutral, one hunting for differences, one hunting for shared details — with disagreements escalated to a fourth agent reading full-resolution originals (§6). This isn't a chatbot bolted on the side; it's the mechanism that caught a real correctness bug in Winnow's own perceptual-hash check (§6) — something a single-pass detector, or a single unquestioned AI call, would have missed.
 2. **A dataset-scale audit that independently reproduces a published research finding**, not a toy demo. Winnow compared all 37.2 million train/val pairs in Imagenette's official split and found the same class of train/test leakage documented in peer-reviewed literature on ImageNet (§6) — with its own numbers, not borrowed ones.
+3. **A live agent that looks before it decides, with authority set by measurement.** Where the detector's own numbers can't separate a real copy from a false match, Claude gets the photos and a full-resolution OpenCV zoom tool, picks where to look, and gives a verdict. The first version, allowed to overrule the detector, let 15 of 36 real leaks through. So the agent can now dispute a flag but never clear one. Its disputes are right 82% of the time, and it lets zero leaks through (§6).
 
 ---
 
@@ -36,6 +37,8 @@ Train/test leakage is the expensive defect because its symptom looks like good n
 
 Claude (Haiku 4.5, via Bedrock) reviews every finding across a scan and decides what to quarantine, through a forced tool call so its output always matches a fixed schema — no free-text parsing to break.
 
+For **borderline edited-copy pairs** (under 35 inliers, or matched keypoints covering under a quarter of a photo), the agent runs a perception, decision, and action loop. It sees both photos, can call an OpenCV zoom tool on any region at full resolution, and returns one verdict per pair: same, different, or unsure. Code then applies the removal rule. A "different" or "unsure" verdict doesn't clear the flag. It marks it **disputed**: the photo stays removed by default, and the dashboard shows the person Claude's reason and zoomed regions so they can overrule it.
+
 ## 4. Architecture
 
 ![Winnow architecture diagram](winnow/architecture.svg)
@@ -63,7 +66,9 @@ This two-stage design exists because embeddings alone are not selective enough a
 
 **A genuine OpenCV 5 behavior change surfaced during this build**: `net.forward(<layer_name>)` in OpenCV 4.x accepted a layer name; OpenCV 5's newer graph-execution engine requires the ONNX tensor name instead, and fails with `tensor '...' was not found` otherwise. This was root-caused by inspecting the ONNX graph directly with the `onnx` Python package, and is the reason the embedder is built by editing the graph itself rather than by picking a different `forward()` argument.
 
-**Everything above is computed from pixels alone** — no label files, no ground truth, no external service beyond the one Bedrock call per scan for the quarantine decision.
+**OpenCV as the agent's tools.** The visual review gives Claude OpenCV operations to call rather than pre-rendered images alone. `winnow/zoom.py` produces a thumbnail and a full-resolution crop of any box the model names, in fractions of the photo so coordinates don't depend on what size the model saw. `semantic.match_regions()` keeps the RANSAC inlier coordinates the verifier used to discard, and reports where the geometric match actually sits in each photo. That's both a gate signal (a match confined to a logo-sized patch is suspect) and a hint for where to zoom.
+
+**Everything above is computed from pixels alone** — no label files, no ground truth, no external service beyond Bedrock for the quarantine decision and the borderline-pair review.
 
 ## 6. Evaluation
 
@@ -99,7 +104,17 @@ Rather than accept those 108 flags as ground truth, every one was independently 
 
 **Why two stages, not just embeddings?** (`imagenette_exp/semantic_eval.py`, `calibrate_verify.py`) Embeddings alone looked perfect on a small 4,950-pair sample, but at 500,000 pairs, different photos of the same kind of subject — two men holding similar fish, two garbage trucks — scored up to 0.906 cosine similarity, well above the 0.80 candidate threshold. Adding the SIFT+RANSAC geometric check cut 1,772 look-alike candidates down to the 2 that were real duplicates, while genuine copies matched with medians of 84–311 shared keypoints — an order of magnitude separation from the false candidates.
 
-**Test suite.** 43 pytest tests run inside the exact production Docker image (`docker build --target test winnow/`): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id-to-filename mapping, truncated replies, the findings cap), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps). To confirm the suite has real detection power rather than passing trivially, three deliberate bugs were introduced one at a time — a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap — and the suite caught each one.
+**Letting the agent look: three versions, measured.** (`imagenette_exp/review_band.py`, `review_eval.py`) Among the audit's 95 keypoint-verified flags, 12 of 19 false matches and 26 of 76 real leaks sat at 25–34 inliers, a band where the detector's own score can't tell them apart. Adding "matched keypoints cover under a quarter of a photo" catches 3 more false matches (15 of 19). The false matches that beat both signals are stock composites, like the same ad background pasted behind different trucks, which look like perfect copies to any geometric check. Every audit pair the gate selects (51: 36 real leaks, 15 false matches) was run through the live agent against real Bedrock, one pair per call, and scored against the verified verdicts:
+
+| Version | False matches caught | Real leaks wrongly doubted | Real leaks let through |
+|---|---|---|---|
+| 1. Claude decides keep/remove per photo | 7/15 | — | **15/36** |
+| 2. Claude may only dispute, per photo | 9/15 | 18/36 | 0 |
+| 3. Claude gives one verdict per pair; code applies the rule | **9/15** | **2/36** | **0** |
+
+Version 1 did more harm than good. Its own reasons showed why: "same kite scene, different photo angles; both worth keeping" treats a burst of the same moment as two photos, but a model trained on one has seen the other. The prompt was given that definition, and the agent lost the authority to clear a flag. Version 2's disputes were right only 9 of 27 times, and its reasons showed a second problem: "real match, but quarantine the test image instead", i.e. confusion about *which* photo the rule removes, not about the photos. Version 3 asks the model only the visual question and leaves the rule to code. 9 of its 11 disputes were right (82%), no leak gets through by default, and each reviewed pair costs $0.005. In a live end-to-end run through the public site on the new image, the chainsaw pair came back disputed with "different chainsaw models: red Echo vs red/beige… different engines, design" after two zooms, in 30 seconds.
+
+**Test suite.** 62 pytest tests run inside the exact production Docker image (`docker build --target test winnow/`): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id-to-filename mapping, truncated replies, the findings cap), the visual review loop (per-pair zoom budgets, the forced final decision, bad zoom requests returned to the model, the can't-clear-a-flag rule), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps). To confirm the suite has real detection power rather than passing trivially, three deliberate bugs were introduced one at a time — a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap — and the suite caught each one.
 
 ## 7. Limitations and future work
 
@@ -107,6 +122,7 @@ Rather than accept those 108 flags as ground truth, every one was independently 
 - **Some thresholds are calibrated, others are fixed.** The edited-copy thresholds (0.80 similarity, 25 keypoints) were calibrated against Imagenette — one dataset. The blur threshold (Laplacian variance ≤ 200) is a fixed number that depends on image resolution, so it can misfire on plain-background shots or miss soft focus in very large photos. A per-dataset relative threshold would generalize better than either fixed number.
 - **Flags are for human review, not automatic deletion, at dataset scale.** 20% of the keypoint-stage flags in the full audit were look-alikes sharing a stock template or landmark rather than true duplicates. The website's thumbnail previews and Keep/Remove overrides exist specifically so a human makes the final call, not the tool.
 - ~~The keypoint check recomputes SIFT features per pair~~ — **fixed**: features are now cached per photo instead of per comparison, so a photo checked against many others only pays that cost once. This was the dominant cost in the full audit above, where the keypoint stage accounted for most of the 34-minute runtime.
+- **The visual review is only measured at 160px.** All 51 evaluation pairs come from Imagenette's small version, while uploads to the site are usually full resolution, where zooming has more to find. The remaining misses are hard cases even for people: the same chainsaw model in two different catalog photos, the same church on another day. The review is bounded for cost: it only runs on scans with ≤ 8 findings, at most 2 pairs and 2 zooms per pair, in one zoom round (across 51 reviews the model never asked for a second).
 - **A copy that is both cropped and heavily recompressed can slip through both checks** — 2 of 75 planted leaks in the impact study were missed this way.
 - **EXIF orientation flags are a risk signal, not a confirmed defect**: Winnow doesn't read label/annotation files, so it can flag a rotation conflict without being able to say whether it actually shifted a bounding box.
 - **The public website's photo previews exist only in the browser tab that ran the scan** — thumbnails are drawn from the visitor's own local files, not from a stored copy, so reloading a shared results link shows the report without images.
@@ -118,6 +134,7 @@ Rather than accept those 108 flags as ground truth, every one was independently 
 
 - **Privacy.** Winnow reads images in place and never stores or forwards pixels beyond the lifetime of a scan. On the public website, uploaded photos live under a per-session S3 prefix that is never publicly readable (CloudFront can only serve `dashboard.html` and the `results/` JSON, not `uploads/`), and lifecycle rules delete uploads after 1 day and reports after 7. There is no account system and no tracking beyond a random session id used solely to route a scan back to the browser that requested it.
 - **Automated decisions stay reversible.** Claude's quarantine calls are recommendations rendered on a dashboard with per-item Keep/Remove overrides — nothing is deleted automatically, and the "cleaned" download is built client-side from whatever the human operator actually approved.
+- **The agent's authority was set by measurement, not assumed.** When the review agent could clear flags, it let 15 of 36 real leaks through. Since a missed leak costs more than a wrongly removed photo, it can now only dispute a flag, and a person makes the final call. Zoom evidence is stored as coordinates, never pixels, because results are publicly readable. The dashboard redraws each zoomed region from the visitor's own copy of the photo.
 - **Honest reporting of uncertainty.** The dashboard states explicitly when Claude's response was truncated or errored rather than silently showing a partial result, and EXIF findings are worded as a risk ("check labels"), not a confirmed defect, since Winnow cannot see annotation files.
 - **The Imagenette finding in §6 is reported as an independent reproduction of a previously published dataset flaw, not a new discovery** — verified against the literature before being included here, rather than presented as novel.
 - **Abuse resistance on a public, unauthenticated endpoint.** File type, size, and count are validated server-side before any presigned URL is issued; filenames are sanitized; and the daily/concurrency/per-scan caps in §4 exist specifically so an anonymous public tool cannot be turned into an open-ended compute or cost sink.
@@ -126,7 +143,7 @@ Rather than accept those 108 flags as ground truth, every one was independently 
 
 - `winnow/` — the pipeline: detectors, S3 glue, Bedrock agent, Dockerfile, ECS task definition, dashboard
 - `winnow/api/` — the public upload API (Lambda) and its deploy script
-- `winnow/tests/` — the 43-test suite, run inside the production image
+- `winnow/tests/` — the 62-test suite, run inside the production image
 - `spike/` — the original dependency spike proving OpenCV 5 + `img_hash` on ARM64
 - `imagenette_exp/` — every evaluation script and result referenced in §6
 - `proposal.md` — the original competition proposal

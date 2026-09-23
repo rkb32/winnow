@@ -66,7 +66,7 @@
 
   <rect x="475" y="435" width="350" height="55" rx="8" fill="#fffbeb" stroke="#b45309" stroke-width="1"/>
   <text x="650" y="455" text-anchor="middle" font-size="12.5" fill="#111827">agent.py — Claude (Haiku 4.5, Bedrock)</text>
-  <text x="650" y="472" text-anchor="middle" font-size="10.5" fill="#374151">forced tool call → decide keep / quarantine per finding</text>
+  <text x="650" y="472" text-anchor="middle" font-size="10.5" fill="#374151">decides keep/quarantine · zooms into borderline pairs</text>
 
   <line x1="650" y1="490" x2="650" y2="508" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
 

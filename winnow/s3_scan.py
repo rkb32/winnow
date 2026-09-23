@@ -53,17 +53,18 @@ def run(bucket, prefix, test_prefix, quarantine_prefix):
 
         result = scan_folder(tmp_dir, test_folder_path=test_dir)
 
-    combined = dict(result)
-    combined["agent_decisions"] = []
-    combined["quarantined"] = []
-    combined["agent_truncated"] = len(build_findings_summary(result)) > MAX_FINDINGS
-    try:
-        combined["agent_decisions"] = decide_actions(result)
-        combined["quarantined"] = apply_quarantine(
-            bucket, combined["agent_decisions"], key_by_local_path, quarantine_prefix)
-    except Exception as e:
-        print("Agent step failed:", e)
-        combined["agent_error"] = True
+        # Inside the with-block: the agent may look at and zoom into the downloaded originals.
+        combined = dict(result)
+        combined["agent_decisions"] = []
+        combined["quarantined"] = []
+        combined["agent_truncated"] = len(build_findings_summary(result)) > MAX_FINDINGS
+        try:
+            combined["agent_decisions"] = decide_actions(result)
+            combined["quarantined"] = apply_quarantine(
+                bucket, combined["agent_decisions"], key_by_local_path, quarantine_prefix)
+        except Exception as e:
+            print("Agent step failed:", e)
+            combined["agent_error"] = True
     return combined
 
 

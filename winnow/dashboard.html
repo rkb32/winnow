@@ -18,6 +18,8 @@
     --danger-soft: #FBEAE8;
     --success: #1E7B4D;
     --success-soft: #E7F5ED;
+    --warn: #8A5A00;
+    --warn-soft: #FDF1DC;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -34,6 +36,8 @@
       --danger-soft: #3A2323;
       --success: #6EE7A0;
       --success-soft: #1E332A;
+      --warn: #FFC56B;
+      --warn-soft: #3A2E1A;
       color-scheme: dark;
     }
   }
@@ -50,6 +54,8 @@
     --danger-soft: #3A2323;
     --success: #6EE7A0;
     --success-soft: #1E332A;
+    --warn: #FFC56B;
+    --warn-soft: #3A2E1A;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -171,6 +177,16 @@
   }
   .chip.bad { background: var(--danger-soft); color: var(--danger); }
   .chip.good { background: var(--success-soft); color: var(--success); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .zooms { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: flex-end; }
+  .zoom {
+    display: block;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background-color: var(--bg);
+    background-repeat: no-repeat;
+  }
+  .zoom-note { margin: 6px 0 0; font-size: 12px; }
   .empty {
     color: var(--text-dim);
     font-size: 13px;
@@ -363,11 +379,27 @@
     return imgs ? `<div class="thumbs">${imgs}</div>` : "";
   }
 
-  function card(topHtml, explainHtml, detailHtml, paths = [], collapseExplain = false) {
+  // The server records only which region Claude zoomed into; the crop is redrawn here from the
+  // visitor's own file, so the pixels never pass through the public results.
+  function zoomHtml(z) {
+    const url = previewUrl(z.file);
+    const [x1, y1, x2, y2] = (z.box || []).map(Number);
+    const [w, h] = (z.size || []).map(Number);
+    const bw = x2 - x1, bh = y2 - y1;
+    if (!url || !(bw > 0 && bh > 0 && w > 0 && h > 0)) return "";
+    const ratio = (bw * w) / (bh * h);
+    const width = Math.min(240, 96 * ratio);
+    const pos = (start, span) => (span >= 1 ? 0 : (start / (1 - span)) * 100);
+    const style = `background-image:url("${url}");width:${width}px;height:${width / ratio}px;` +
+      `background-size:${100 / bw}% ${100 / bh}%;background-position:${pos(x1, bw)}% ${pos(y1, bh)}%`;
+    return `<span class="zoom" role="img" aria-label="The part of ${esc(filename(z.file))} Claude zoomed into" style="${esc(style)}"></span>`;
+  }
+
+  function card(topHtml, explainHtml, detailHtml, paths = [], summary = null) {
     const div = document.createElement("div");
     div.className = "card";
-    const explain = !explainHtml ? "" : collapseExplain
-      ? `<details class="why"><summary>Why</summary>${explainHtml}</details>`
+    const explain = !explainHtml ? "" : summary
+      ? `<details class="why"><summary>${summary}</summary>${explainHtml}</details>`
       : `<div class="explain">${explainHtml}</div>`;
     div.innerHTML =
       `<div class="card-top">${topHtml}</div>` +
@@ -440,6 +472,14 @@
     } else if (data.agent_truncated) {
       agentNote.hidden = false;
       agentNote.textContent = "This batch had a lot of issues, so Claude only reviewed the first 30 — later findings won't have a Keep/Remove call.";
+    } else {
+      const disputed = decisions.filter(d => d.disputed && !overrides.has(d.file)).length;
+      if (disputed) {
+        agentNote.hidden = false;
+        agentNote.textContent = disputed === 1
+          ? `After looking at the photos, Claude doubts 1 of the detector's flags. It's still removed unless you keep it, so check the card marked "Claude doubts it".`
+          : `After looking at the photos, Claude doubts ${disputed} of the detector's flags. They're still removed unless you keep them, so check the cards marked "Claude doubts it".`;
+      }
     }
 
     // Claude decides one file per pair to quarantine (the training copy for a leak, the
@@ -451,18 +491,31 @@
       if (i === undefined) return null;
       const d = decisions[i];
       const remove = actionFor(d) === "quarantine";
+      const disputed = d.disputed && !overrides.has(d.file);
       const toggle = localFiles.size
         ? `<button class="toggle" type="button" data-decision="${i}">${remove ? "Keep instead" : "Remove instead"}</button>`
         : "";
-      const chip = `<span class="chip ${remove ? "bad" : "good"}">${remove ? "Remove" : "Keep"}${overrides.has(d.file) ? " (your call)" : ""}</span>`;
-      return { chip, toggle, reason: d.reason ? esc(cleanNames(d.reason)) : null };
+      const chip = disputed
+        ? `<span class="chip warn">Remove · Claude doubts it</span>`
+        : `<span class="chip ${remove ? "bad" : "good"}">${remove ? "Remove" : "Keep"}${overrides.has(d.file) ? " (your call)" : ""}</span>`;
+      let reason = d.reason ? esc(cleanNames(d.reason)) : "";
+      let summary = "Why";
+      const zooms = d.visual_review?.zooms;
+      if (zooms) {
+        summary = "Why · Claude checked the photos";
+        const tiles = zooms.map(zoomHtml).join("");
+        reason += `<p class="zoom-note">Claude looked at both photos` +
+          (zooms.length ? ` and zoomed in ${zooms.length === 1 ? "once" : `${zooms.length} times`}.` : ".") + `</p>` +
+          (tiles ? `<div class="zooms">${tiles}</div>` : "");
+      }
+      return { chip, toggle, reason: reason || null, summary };
     }
     function withAi(defectChip, targetFile, fallbackExplain) {
       const ai = aiExtra(targetFile);
       return {
         actions: `<span class="card-actions">${defectChip}${ai ? ai.chip + ai.toggle : ""}</span>`,
         explain: (ai && ai.reason) || fallbackExplain,
-        collapse: !!(ai && ai.reason),
+        collapse: ai && ai.reason ? ai.summary : null,
       };
     }
 

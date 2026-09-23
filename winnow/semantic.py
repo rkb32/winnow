@@ -56,7 +56,8 @@ def _keypoints(image):
     scale = _MAX_SIDE / max(image.shape[:2])
     if scale < 1:
         image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-    return _sift.detectAndCompute(image, None)
+    keypoints, descriptors = _sift.detectAndCompute(image, None)
+    return keypoints, descriptors, image.shape[:2]
 
 
 # A pair-comparison workload compares the same photo against many others (a burst of
@@ -70,25 +71,58 @@ def _keypoints_for(path, flipped=False):
     return _keypoints(image)
 
 
-def _ransac_inliers(features_a, features_b):
-    (kp_a, des_a), (kp_b, des_b) = features_a, features_b
+_NO_MATCH = (np.empty((0, 2), np.float32), np.empty((0, 2), np.float32))
+
+
+def _ransac(features_a, features_b):
+    """The matched keypoints consistent with one homography, as (points in a, points in b)."""
+    (kp_a, des_a, _), (kp_b, des_b, _) = features_a, features_b
     if des_a is None or des_b is None or len(kp_a) < 2 or len(kp_b) < 2:
-        return 0
+        return _NO_MATCH
     good = [p[0] for p in _matcher.knnMatch(des_a, des_b, k=2)
             if len(p) == 2 and p[0].distance < 0.75 * p[1].distance]
     if len(good) < 8:
-        return 0
+        return _NO_MATCH
     src = np.float32([kp_a[m.queryIdx].pt for m in good])
     dst = np.float32([kp_b[m.trainIdx].pt for m in good])
     _, mask = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
-    return int(mask.sum()) if mask is not None else 0
+    if mask is None:
+        return _NO_MATCH
+    keep = mask.ravel().astype(bool)
+    return src[keep], dst[keep]
+
+
+def _best_match(path_a, path_b):
+    """Inliers between the photos, trying path_a mirrored too; path_a's points come back un-mirrored."""
+    features_b = _keypoints_for(path_b)
+    features_a = _keypoints_for(path_a)
+    straight = _ransac(features_a, features_b)
+    mirrored = _ransac(_keypoints_for(path_a, flipped=True), features_b)
+    if len(mirrored[0]) > len(straight[0]):
+        points_a = mirrored[0].copy()
+        points_a[:, 0] = features_a[2][1] - 1 - points_a[:, 0]
+        return points_a, mirrored[1], features_a[2], features_b[2]
+    return straight[0], straight[1], features_a[2], features_b[2]
 
 
 def keypoint_inliers(path_a, path_b):
     """Keypoint matches consistent with one geometric transform, trying path_a mirrored too."""
-    features_b = _keypoints_for(path_b)
-    return max(_ransac_inliers(_keypoints_for(path_a), features_b),
-               _ransac_inliers(_keypoints_for(path_a, flipped=True), features_b))
+    return len(_best_match(path_a, path_b)[0])
+
+
+def _box(points, shape):
+    height, width = shape
+    (x1, y1), (x2, y2) = points.min(axis=0), points.max(axis=0)
+    return [round(float(x1) / width, 3), round(float(y1) / height, 3),
+            round(float(x2) / width, 3), round(float(y2) / height, 3)]
+
+
+def match_regions(path_a, path_b):
+    """Where the matched keypoints sit in each photo, as [x1, y1, x2, y2] fractions of its size."""
+    points_a, points_b, shape_a, shape_b = _best_match(path_a, path_b)
+    if not len(points_a):
+        return None
+    return _box(points_a, shape_a), _box(points_b, shape_b)
 
 
 def _verified_pairs(left, right, skip, same_set):
