@@ -24,21 +24,21 @@ def download_bucket_prefix(bucket, prefix, dest_dir):
     return key_by_local_path
 
 
-def upload_results(bucket, result):
-    timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+def upload_results(bucket, result, session=None):
     body = json.dumps(result, default=str, indent=2).encode("utf-8")
     s3 = boto3.client("s3")
+    if session:
+        key = f"results/sessions/{session}.json"
+        s3.put_object(Bucket=bucket, Key=key, Body=body, ContentType="application/json")
+        return key
+    timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     key = f"results/{timestamp}.json"
     s3.put_object(Bucket=bucket, Key=key, Body=body, ContentType="application/json")
     s3.put_object(Bucket=bucket, Key="results/latest.json", Body=body, ContentType="application/json")
     return key
 
 
-if __name__ == "__main__":
-    bucket = os.environ["WINNOW_BUCKET"]
-    prefix = os.environ.get("WINNOW_PREFIX", "")
-    test_prefix = os.environ.get("WINNOW_TEST_PREFIX")
-
+def run(bucket, prefix, test_prefix, quarantine_prefix):
     with tempfile.TemporaryDirectory() as tmp_dir:
         key_by_local_path = download_bucket_prefix(bucket, prefix, tmp_dir)
 
@@ -53,21 +53,42 @@ if __name__ == "__main__":
     decisions, quarantined = [], []
     try:
         decisions = decide_actions(result)
-        quarantined = apply_quarantine(bucket, decisions, key_by_local_path)
+        quarantined = apply_quarantine(bucket, decisions, key_by_local_path, quarantine_prefix)
     except Exception as e:
         print("Agent step skipped:", e)
 
     combined = dict(result)
     combined["agent_decisions"] = decisions
     combined["quarantined"] = quarantined
-    result_key = upload_results(bucket, combined)
+    return combined
 
-    print("Duplicate pairs:          ", result["duplicate_pairs"])
-    print("Blurry images:            ", result["blurry_images"])
-    print("Risky EXIF orientation:   ", result["risky_orientation_images"])
-    print("Unreadable images:        ", result["unreadable_images"])
-    if "leaked_pairs" in result:
-        print("Train/test leaked pairs:  ", result["leaked_pairs"])
+
+if __name__ == "__main__":
+    bucket = os.environ["WINNOW_BUCKET"]
+    session = os.environ.get("WINNOW_SESSION")
+    if session:
+        prefix = f"uploads/{session}/images/"
+        quarantine_prefix = f"uploads/{session}/quarantine/"
+    else:
+        prefix = os.environ.get("WINNOW_PREFIX", "")
+        quarantine_prefix = "quarantine/"
+
+    try:
+        combined = run(bucket, prefix, os.environ.get("WINNOW_TEST_PREFIX"), quarantine_prefix)
+    except Exception:
+        # Without this, a visitor's page would poll for a result that never arrives.
+        if session:
+            upload_results(bucket, {"error": "scan failed"}, session)
+        raise
+
+    result_key = upload_results(bucket, combined, session)
+
+    print("Duplicate pairs:          ", combined["duplicate_pairs"])
+    print("Blurry images:            ", combined["blurry_images"])
+    print("Risky EXIF orientation:   ", combined["risky_orientation_images"])
+    print("Unreadable images:        ", combined["unreadable_images"])
+    if "leaked_pairs" in combined:
+        print("Train/test leaked pairs:  ", combined["leaked_pairs"])
     print("Results written to:       ", f"s3://{bucket}/{result_key}")
-    print("Agent decisions:          ", decisions)
-    print("Quarantined:              ", quarantined)
+    print("Agent decisions:          ", combined["agent_decisions"])
+    print("Quarantined:              ", combined["quarantined"])

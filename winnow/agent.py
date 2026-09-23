@@ -3,6 +3,9 @@ import json
 import boto3
 
 MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+# Bounds the prompt size, and so the cost, of any single scan: 20 identical photos
+# would otherwise produce 190 duplicate pairs.
+MAX_FINDINGS = 30
 
 
 def build_findings_summary(result):
@@ -22,7 +25,7 @@ def build_findings_summary(result):
 
 
 def decide_actions(result):
-    findings = build_findings_summary(result)
+    findings = build_findings_summary(result)[:MAX_FINDINGS]
     if not findings:
         return []
 
@@ -52,7 +55,7 @@ def decide_actions(result):
     return json.loads(text[start:end + 1])
 
 
-def apply_quarantine(bucket, decisions, key_by_local_path):
+def apply_quarantine(bucket, decisions, key_by_local_path, dest_prefix="quarantine/"):
     s3 = boto3.client("s3")
     moved = []
     for decision in decisions:
@@ -62,7 +65,7 @@ def apply_quarantine(bucket, decisions, key_by_local_path):
         if src_key is None:
             continue
         filename = src_key.rsplit("/", 1)[-1]
-        dest_key = f"quarantine/{filename}"
+        dest_key = f"{dest_prefix}{filename}"
         try:
             s3.copy_object(Bucket=bucket, CopySource={"Bucket": bucket, "Key": src_key}, Key=dest_key)
             moved.append(dest_key)

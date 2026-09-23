@@ -13,6 +13,7 @@
     --text-dim: #6E6B62;
     --accent: #3454D1;
     --accent-soft: #EAEDFB;
+    --on-accent: #FFFFFF;
     --danger: #A3271E;
     --danger-soft: #FBEAE8;
     --success: #1E7B4D;
@@ -28,6 +29,7 @@
       --text-dim: #9A9CA6;
       --accent: #8DA0FF;
       --accent-soft: #262B45;
+      --on-accent: #15161A;
       --danger: #FF8A80;
       --danger-soft: #3A2323;
       --success: #6EE7A0;
@@ -43,6 +45,7 @@
     --text-dim: #9A9CA6;
     --accent: #8DA0FF;
     --accent-soft: #262B45;
+    --on-accent: #15161A;
     --danger: #FF8A80;
     --danger-soft: #3A2323;
     --success: #6EE7A0;
@@ -68,10 +71,54 @@
   }
   h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; text-wrap: balance; }
   .sub { color: var(--text-dim); font-size: 14px; margin: 0 0 4px; }
+  .upload { margin: 20px 0 36px; }
+  .dropzone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 28px 16px;
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .dropzone:hover, .dropzone.over, .dropzone:focus-within { border-color: var(--accent); }
+  .dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .dz-title { font-weight: 600; font-size: 15px; }
+  .dz-sub { font-size: 13px; color: var(--text-dim); }
+  .dz-picked { font-size: 13px; color: var(--accent); font-weight: 500; min-height: 1em; }
+  .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+  button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.45; cursor: default; }
+  #upload-status { font-size: 13px; color: var(--text); margin: 0; }
+  .note { font-size: 12px; color: var(--text-dim); margin: 10px 0 0; }
+  .results-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0 0 4px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
   .headline {
     font-size: 17px;
     font-weight: 500;
-    margin: 16px 0 28px;
+    margin: 12px 0 28px;
     padding: 14px 16px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -95,8 +142,8 @@
     gap: 10px;
     flex-wrap: wrap;
   }
-  .names { font-weight: 500; font-size: 14px; }
-  .names .file { font-family: "IBM Plex Mono", monospace; font-weight: 400; }
+  .names { font-weight: 500; font-size: 14px; overflow-wrap: anywhere; }
+  .names .file, .file { font-family: "IBM Plex Mono", monospace; font-weight: 400; }
   .explain { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
   .detail { font-size: 11px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; margin-top: 2px; }
   .chip {
@@ -115,13 +162,30 @@
     font-style: italic;
     padding: 4px 0 0;
   }
-  #status { color: var(--text-dim); font-size: 12px; font-family: "IBM Plex Mono", monospace; }
+  #status { color: var(--text-dim); font-size: 13px; }
 </style>
 
 <div class="wrap">
   <p class="eyebrow">Winnow</p>
   <h1>Is your photo set ready to train on?</h1>
-  <p class="sub" id="status">Loading latest scan…</p>
+  <p class="sub">Winnow checks a batch of training photos for duplicates, blur, and rotation problems, then has Claude decide which ones to remove.</p>
+
+  <div class="upload">
+    <label class="dropzone" id="dropzone">
+      <input type="file" id="file-input" multiple accept="image/jpeg,image/png">
+      <span class="dz-title">Drop photos here, or click to choose</span>
+      <span class="dz-sub">Up to 20 JPEG or PNG photos, 5 MB each</span>
+      <span class="dz-picked" id="picked"></span>
+    </label>
+    <div class="actions">
+      <button id="scan-btn" disabled>Scan my photos</button>
+      <p id="upload-status" role="status"></p>
+    </div>
+    <p class="note">Your photos are never shown publicly and are deleted automatically within about a day. Please don't upload anything private.</p>
+  </div>
+
+  <p class="results-label" id="results-label">Example scan</p>
+  <p id="status">Loading…</p>
 
   <div class="headline" id="headline"></div>
 
@@ -157,10 +221,39 @@
 </div>
 
 <script>
-  const RESULTS_URL = "results/latest.json";
+  const API_URL = "https://qayzgmt53t5xj2vcffxyymkj6e0ulhoi.lambda-url.us-east-1.on.aws";
+  const MAX_FILES = 20;
+  const MAX_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_TYPES = ["image/jpeg", "image/png"];
+  const SESSION_RE = /^[0-9a-f]{32}$/;
+  const ORIENTATION_NAMES = {
+    1: "normal", 2: "flip horizontal", 3: "rotate 180°",
+    4: "flip vertical", 5: "transpose", 6: "rotate 90° CW",
+    7: "transverse", 8: "rotate 90° CCW",
+  };
 
+  const fileInput = document.getElementById("file-input");
+  const dropzone = document.getElementById("dropzone");
+  const scanBtn = document.getElementById("scan-btn");
+  const uploadStatus = document.getElementById("upload-status");
+  const resultsLabel = document.getElementById("results-label");
+  const statusEl = document.getElementById("status");
+  const containers = ["duplicates", "blurry", "exif", "decisions", "unreadable"]
+    .map(id => document.getElementById(id));
+
+  // Filenames and AI text come from strangers' uploads, so never let them become HTML.
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, c =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  }
+
+  // Scanner paths look like /tmp/x/uploads__<session>__images__3__photo.jpg; show just photo.jpg.
   function filename(path) {
-    return path.split("/").pop().split("__").pop();
+    return String(path).split("/").pop().split("__").pop();
+  }
+
+  function cleanNames(text) {
+    return String(text).replace(/[^\s()]*__/g, "");
   }
 
   function card(topHtml, explainHtml, detailHtml) {
@@ -177,94 +270,204 @@
     container.innerHTML = `<div class="empty">${text}</div>`;
   }
 
-  fetch(RESULTS_URL)
-    .then(r => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
-    .then(data => {
-      document.getElementById("status").textContent = "Live scan results, read-only";
+  function clearResults(message) {
+    document.getElementById("headline").textContent = message;
+    containers.forEach(c => { c.innerHTML = ""; });
+  }
 
-      const dupCount = data.duplicate_pairs.length;
-      const blurCount = data.blurry_images.length;
-      const exifCount = data.risky_orientation_images.length;
-      const badCount = data.unreadable_images.length;
-      const totalIssues = dupCount + blurCount + exifCount + badCount;
+  function plural(n, word) {
+    return `${n} ${word}${n === 1 ? "" : "s"}`;
+  }
 
-      document.getElementById("headline").innerHTML = totalIssues === 0
-        ? `<b>Looks clean.</b> No duplicates, blur, or rotation problems found.`
-        : `Found <b>${totalIssues} issue${totalIssues === 1 ? "" : "s"}</b> across this batch: ` +
-          [dupCount && `${dupCount} duplicate pair${dupCount === 1 ? "" : "s"}`,
-           blurCount && `${blurCount} blurry photo${blurCount === 1 ? "" : "s"}`,
-           exifCount && `${exifCount} rotation problem${exifCount === 1 ? "" : "s"}`,
-           badCount && `${badCount} unreadable file${badCount === 1 ? "" : "s"}`]
-            .filter(Boolean).join(", ") + ".";
+  function render(data) {
+    clearResults("");
+    const [dup, blur, exif, dec, unreadable] = containers;
+    const duplicatePairs = data.duplicate_pairs || [];
+    const blurryImages = data.blurry_images || [];
+    const exifImages = data.risky_orientation_images || [];
+    const unreadableImages = data.unreadable_images || [];
+    const decisions = data.agent_decisions || [];
+    const totalIssues = duplicatePairs.length + blurryImages.length + exifImages.length + unreadableImages.length;
 
-      const dup = document.getElementById("duplicates");
-      if (dupCount) {
-        data.duplicate_pairs.forEach(([a, b, dist]) => {
-          dup.appendChild(card(
-            `<span class="names"><span class="file">${filename(a)}</span> and <span class="file">${filename(b)}</span></span>` +
-            `<span class="chip bad">${dist === 0 ? "Exact match" : "Very similar"}</span>`,
-            "These look like the same photo, pick one and remove the other.",
-            `perceptual hash distance: ${dist} (flagged if ≤ 5)`
-          ));
-        });
-      } else renderEmpty(dup, "None found, no duplicates in this batch.");
+    document.getElementById("headline").innerHTML = totalIssues === 0
+      ? `<b>Looks clean.</b> No duplicates, blur, or rotation problems found.`
+      : `Found <b>${plural(totalIssues, "issue")}</b> across this batch: ` +
+        [duplicatePairs.length && plural(duplicatePairs.length, "duplicate pair"),
+         blurryImages.length && plural(blurryImages.length, "blurry photo"),
+         exifImages.length && plural(exifImages.length, "rotation problem"),
+         unreadableImages.length && plural(unreadableImages.length, "unreadable file")]
+          .filter(Boolean).join(", ") + ".";
 
-      const blur = document.getElementById("blurry");
-      if (blurCount) {
-        data.blurry_images.forEach(([p, sharpness]) => {
-          blur.appendChild(card(
-            `<span class="names file">${filename(p)}</span><span class="chip bad">Too blurry</span>`,
-            null,
-            `Laplacian variance: ${Number(sharpness).toFixed(1)} (lower = blurrier, flagged if ≤ 200)`
-          ));
-        });
-      } else renderEmpty(blur, "None found, every photo is sharp enough to use.");
+    if (duplicatePairs.length) {
+      duplicatePairs.forEach(([a, b, dist]) => {
+        dup.appendChild(card(
+          `<span class="names"><span class="file">${esc(filename(a))}</span> and <span class="file">${esc(filename(b))}</span></span>` +
+          `<span class="chip bad">${Number(dist) === 0 ? "Exact match" : "Very similar"}</span>`,
+          "These look like the same photo, pick one and remove the other.",
+          `perceptual hash distance: ${esc(dist)} (flagged if ≤ 5)`
+        ));
+      });
+    } else renderEmpty(dup, "None found, no duplicates in this batch.");
 
-      const exif = document.getElementById("exif");
-      const ORIENTATION_NAMES = {
-        1: "normal", 2: "flip horizontal", 3: "rotate 180°",
-        4: "flip vertical", 5: "transpose", 6: "rotate 90° CW",
-        7: "transverse", 8: "rotate 90° CCW",
-      };
-      if (exifCount) {
-        data.risky_orientation_images.forEach(([p, orientation, swapsDims]) => {
-          exif.appendChild(card(
-            `<span class="names file">${filename(p)}</span>` +
-            (swapsDims ? `<span class="chip bad">Bounding box risk</span>` : `<span class="chip bad">Rotation flagged</span>`),
-            swapsDims ? "This rotation also flips width and height, high risk of misplaced bounding boxes." : null,
-            `EXIF orientation tag: ${orientation} (${ORIENTATION_NAMES[orientation] || "unknown"}) — flagged because it isn't 1 (normal)`
-          ));
-        });
-      } else renderEmpty(exif, "None found, no rotation conflicts.");
+    if (blurryImages.length) {
+      blurryImages.forEach(([p, sharpness]) => {
+        blur.appendChild(card(
+          `<span class="names file">${esc(filename(p))}</span><span class="chip bad">Too blurry</span>`,
+          null,
+          `Laplacian variance: ${Number(sharpness).toFixed(1)} (lower = blurrier, flagged if ≤ 200)`
+        ));
+      });
+    } else renderEmpty(blur, "None found, every photo is sharp enough to use.");
 
-      const dec = document.getElementById("decisions");
-      const decisions = data.agent_decisions || [];
-      if (decisions.length) {
-        decisions.forEach(d => {
-          const label = d.action === "quarantine" ? "Remove" : "Keep";
-          const chipClass = d.action === "quarantine" ? "bad" : "good";
-          dec.appendChild(card(
-            `<span class="names file">${filename(d.file)}</span><span class="chip ${chipClass}">${label}</span>`,
-            d.reason || null
-          ));
-        });
-      } else renderEmpty(dec, "No recommendations yet.");
+    if (exifImages.length) {
+      exifImages.forEach(([p, orientation, swapsDims]) => {
+        exif.appendChild(card(
+          `<span class="names file">${esc(filename(p))}</span>` +
+          (swapsDims ? `<span class="chip bad">Bounding box risk</span>` : `<span class="chip bad">Rotation flagged</span>`),
+          swapsDims ? "This rotation also flips width and height, high risk of misplaced bounding boxes." : null,
+          `EXIF orientation tag: ${esc(orientation)} (${ORIENTATION_NAMES[orientation] || "unknown"}) — flagged because it isn't 1 (normal)`
+        ));
+      });
+    } else renderEmpty(exif, "None found, no rotation conflicts.");
 
-      const unreadable = document.getElementById("unreadable");
-      const unreadableImages = data.unreadable_images || [];
-      if (unreadableImages.length) {
-        unreadableImages.forEach(([p]) => {
-          unreadable.appendChild(card(
-            `<span class="names file">${filename(p)}</span><span class="chip bad">Couldn't open</span>`,
-            "This file may be corrupted, or it isn't actually a valid image."
-          ));
-        });
-      } else renderEmpty(unreadable, "None, every file opened fine.");
-    })
-    .catch(err => {
-      document.getElementById("status").textContent = "Could not load results (" + err.message + ")";
+    if (decisions.length) {
+      decisions.forEach(d => {
+        const remove = d.action === "quarantine";
+        dec.appendChild(card(
+          `<span class="names file">${esc(filename(d.file))}</span><span class="chip ${remove ? "bad" : "good"}">${remove ? "Remove" : "Keep"}</span>`,
+          d.reason ? esc(cleanNames(d.reason)) : null
+        ));
+      });
+    } else renderEmpty(dec, "No recommendations, nothing needed a decision.");
+
+    if (unreadableImages.length) {
+      unreadableImages.forEach(([p]) => {
+        unreadable.appendChild(card(
+          `<span class="names file">${esc(filename(p))}</span><span class="chip bad">Couldn't open</span>`,
+          "This file may be corrupted, or it isn't actually a valid image."
+        ));
+      });
+    } else renderEmpty(unreadable, "None, every file opened fine.");
+  }
+
+  function loadExample() {
+    fetch("results/latest.json")
+      .then(r => {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(data => {
+        resultsLabel.textContent = "Example scan";
+        statusEl.textContent = "A sample batch we scanned earlier. Upload your own photos above to see your results here.";
+        render(data);
+      })
+      .catch(err => {
+        statusEl.textContent = "Could not load the example scan (" + err.message + ")";
+      });
+  }
+
+  function validate(files) {
+    if (!files.length) return "Pick some photos first.";
+    if (files.length > MAX_FILES) return `Pick at most ${MAX_FILES} photos.`;
+    const wrongType = files.find(f => !ALLOWED_TYPES.includes(f.type));
+    if (wrongType) return `${wrongType.name} isn't a JPEG or PNG.`;
+    const tooBig = files.find(f => f.size > MAX_BYTES);
+    if (tooBig) return `${tooBig.name} is over 5 MB.`;
+    return null;
+  }
+
+  function showPicked() {
+    const files = [...fileInput.files];
+    const problem = files.length ? validate(files) : null;
+    document.getElementById("picked").textContent = files.length ? plural(files.length, "photo") + " selected" : "";
+    uploadStatus.textContent = problem || "";
+    scanBtn.disabled = !files.length || Boolean(problem);
+  }
+
+  async function api(path, body) {
+    const r = await fetch(API_URL + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || `Something went wrong (HTTP ${r.status}).`);
+    return data;
+  }
+
+  async function uploadFile(target, file) {
+    const form = new FormData();
+    Object.entries(target.fields).forEach(([k, v]) => form.append(k, v));
+    form.append("file", file);
+    const r = await fetch(target.url, { method: "POST", body: form });
+    if (!r.ok) throw new Error(`Upload failed for ${file.name}.`);
+  }
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  async function pollResults(session) {
+    const deadline = Date.now() + 5 * 60 * 1000;
+    while (Date.now() < deadline) {
+      const r = await fetch(`results/sessions/${session}.json`, { cache: "no-store" });
+      if (r.ok) return r.json();
+      await sleep(5000);
+    }
+    throw new Error("This scan is taking longer than expected. Refresh the page in a minute to check again.");
+  }
+
+  async function showSession(session) {
+    resultsLabel.textContent = "Your scan";
+    statusEl.textContent = "";
+    clearResults("Waiting for your results…");
+    uploadStatus.textContent = "Scanning… this usually takes about a minute.";
+    const data = await pollResults(session);
+    if (data.error) throw new Error("The scan failed. Try again, or try different photos.");
+    render(data);
+    uploadStatus.textContent = "Done. Bookmark or share this page's link to come back to these results.";
+  }
+
+  fileInput.addEventListener("change", showPicked);
+  ["dragenter", "dragover"].forEach(type => dropzone.addEventListener(type, e => {
+    e.preventDefault();
+    dropzone.classList.add("over");
+  }));
+  ["dragleave", "drop"].forEach(type => dropzone.addEventListener(type, e => {
+    e.preventDefault();
+    dropzone.classList.remove("over");
+  }));
+  dropzone.addEventListener("drop", e => {
+    fileInput.files = e.dataTransfer.files;
+    showPicked();
+  });
+
+  scanBtn.addEventListener("click", async () => {
+    const files = [...fileInput.files];
+    const problem = validate(files);
+    if (problem) {
+      uploadStatus.textContent = problem;
+      return;
+    }
+    scanBtn.disabled = true;
+    try {
+      uploadStatus.textContent = `Uploading ${plural(files.length, "photo")}…`;
+      const { session, uploads } = await api("/upload-urls", {
+        files: files.map(f => ({ name: f.name, type: f.type })),
+      });
+      await Promise.all(uploads.map((target, i) => uploadFile(target, files[i])));
+      await api("/scan", { session });
+      history.replaceState(null, "", "?session=" + session);
+      await showSession(session);
+    } catch (err) {
+      uploadStatus.textContent = err.message;
+    } finally {
+      scanBtn.disabled = false;
+    }
+  });
+
+  const sessionParam = new URLSearchParams(location.search).get("session");
+  if (sessionParam && SESSION_RE.test(sessionParam)) {
+    showSession(sessionParam).catch(err => { uploadStatus.textContent = err.message; });
+  } else {
+    loadExample();
+  }
 </script>

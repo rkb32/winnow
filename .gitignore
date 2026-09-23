@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
+winnow/api/winnow-api.zip
 imagenette_exp/imagenette2-160.tgz
 imagenette_exp/imagenette2-160/
 imagenette_exp/combined/

@@ -4,7 +4,7 @@ A data-quality auditor for computer vision training datasets. Built for the [Ope
 
 Point it at a folder of training images and it flags the things that quietly corrupt a model before anyone notices: near-duplicate photos, images duplicated across train/test splits (leakage), blurry images, and EXIF orientation tags that don't match how an image actually displays (which shifts bounding boxes without warning). It never stores or forwards the images themselves, everything runs read-in-place.
 
-**Live dashboard:** https://d1oc3ay9n04ubj.cloudfront.net/ — read-only, shows the results from the last real scan.
+**Try it:** https://d1oc3ay9n04ubj.cloudfront.net/ — upload up to 20 photos and get a report in about a minute, no install or account needed.
 
 ## What it catches
 
@@ -29,6 +29,23 @@ Results written to S3 (results/latest.json + a timestamped copy)
    ▼
 dashboard.html reads results/latest.json directly, served publicly via CloudFront (read-only, no credentials on the page)
 ```
+
+The website adds a second entry point into the same container, for people who don't have AWS access:
+
+```
+Visitor picks photos on the site
+   │  Lambda (winnow/api/app.py) hands out presigned upload links:
+   │  one per file, JPEG/PNG only, ≤ 5 MB, into uploads/<session>/ only
+   ▼
+Browser uploads straight to S3, then asks the Lambda to start the scan
+   │  Lambda checks the cost caps, then starts the Fargate task with WINNOW_SESSION set
+   ▼
+Same scanner + Claude agent, scoped to that one batch
+   ▼
+results/sessions/<session>.json, which the page polls for and renders
+```
+
+Uploaded photos are never readable publicly (CloudFront can only read `dashboard.html` and `results/`), and S3 lifecycle rules delete uploads after 1 day and reports after 7.
 
 IAM is split into three roles by who needs what: an execution role (lets ECS pull the image and ship logs), a task role (lets the running code read/write S3 and call Bedrock, scoped to one bucket), and an EventBridge invocation role (lets the trigger call `ecs:RunTask`). No role does more than one job.
 
@@ -58,7 +75,8 @@ Ran the duplicate/leakage detector against 130 real photos from [Imagenette](htt
 
 ## Repo layout
 
-- `winnow/` — the actual pipeline (detectors, S3 glue, Bedrock agent, Dockerfile, task definition)
+- `winnow/` — the actual pipeline (detectors, S3 glue, Bedrock agent, Dockerfile, task definition, dashboard)
+- `winnow/api/` — the upload API Lambda and its one-time deploy script
 - `spike/` — the original dependency spike proving OpenCV 5 + `img_hash` work on ARM64 before building anything else
 - `imagenette_exp/` — the real-data leakage experiment
 - `proposal.md` / `Winnow-OpenCV-2026-Proposal.pdf` — the original competition proposal
@@ -69,4 +87,4 @@ Ran the duplicate/leakage detector against 130 real photos from [Imagenette](htt
 - **Thresholds are provisional**: `distance ≤ 5` and `sharpness ≤ 200` were set from a mix of synthetic test images and a small real-photo sample, not a broad calibration study. They should be tuned against a larger, more diverse dataset before relying on them for a real decision.
 - **No automated test suite yet**: the detectors were validated through manual runs and the Imagenette experiment above, not a checked-in `pytest` suite.
 - **Bedrock agent has a one-time setup dependency**: AWS requires each account to submit a "use case" form to Anthropic before the model can be invoked; this is a one-time manual step, not something the pipeline can do for itself.
-- **Dashboard is read-only and unauthenticated**: the live link above serves `results/latest.json` to anyone who has it, via CloudFront with no login. Fine for a public demo of non-sensitive sample data; a production version scanning real private datasets would need the dashboard behind real auth instead.
+- **Public uploads are capped, not authenticated**: anyone can scan photos without an account, so cost is bounded by hard limits instead: 15 scans per day, 3 running at once, and at most 30 findings sent to Claude per scan (about $4/month even under constant abuse). The tradeoff is that someone who burns the daily cap blocks real visitors until the next day. A production version would put uploads behind real accounts with per-user quotas.
