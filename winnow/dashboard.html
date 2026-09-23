@@ -146,7 +146,8 @@
   }
   .names { font-weight: 500; font-size: 14px; overflow-wrap: anywhere; }
   .names .file, .file { font-family: "IBM Plex Mono", monospace; font-weight: 400; }
-  .card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+  .agent-note { font-size: 13px; color: var(--text-dim); margin: -20px 0 20px; }
   .explain { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
   .why {
     font-size: 13px;
@@ -248,6 +249,7 @@
   <p id="status">Loading…</p>
 
   <div class="headline" id="headline"></div>
+  <p class="agent-note" id="agent-note" hidden></p>
 
   <div class="download" id="download-bar" hidden>
     <button id="download-btn" type="button">Download cleaned photos</button>
@@ -280,12 +282,6 @@
     <p class="h2-sub">Photos with a hidden "rotate me" tag. If your labels were drawn on the unrotated photo, they may no longer line up. Winnow can't see your label files, so these are worth checking by hand.</p>
     <p class="fix"><b>Fix:</b> open a few in your labeling tool. If the boxes are off, re-save the photos with rotation applied (for example Pillow's <code>ImageOps.exif_transpose</code>) and redraw those boxes.</p>
     <div id="exif"></div>
-  </section>
-
-  <section>
-    <h2>AI Recommendations</h2>
-    <p class="h2-sub">Claude reviewed every issue above and decided what to do about it.</p>
-    <div id="decisions"></div>
   </section>
 
   <section>
@@ -322,7 +318,7 @@
   const uploadStatus = document.getElementById("upload-status");
   const resultsLabel = document.getElementById("results-label");
   const statusEl = document.getElementById("status");
-  const containers = ["duplicates", "blurry", "exif", "decisions", "unreadable"]
+  const containers = ["duplicates", "blurry", "exif", "unreadable"]
     .map(id => document.getElementById(id));
 
   // Filenames and AI text come from strangers' uploads, so never let them become HTML.
@@ -391,6 +387,7 @@
 
   function clearResults(message) {
     document.getElementById("headline").textContent = message;
+    document.getElementById("agent-note").hidden = true;
     containers.forEach(c => { c.innerHTML = ""; });
     leakContainer.innerHTML = "";
     leakSection.hidden = true;
@@ -413,7 +410,7 @@
   function render(data) {
     currentData = data;
     clearResults("");
-    const [dup, blur, exif, dec, unreadable] = containers;
+    const [dup, blur, exif, unreadable] = containers;
     const duplicatePairs = data.duplicate_pairs || [];
     const blurryImages = data.blurry_images || [];
     const exifImages = data.risky_orientation_images || [];
@@ -436,15 +433,53 @@
          unreadableImages.length && plural(unreadableImages.length, "unreadable file")]
           .filter(Boolean).join(", ") + ".";
 
+    const agentNote = document.getElementById("agent-note");
+    if (data.agent_error) {
+      agentNote.hidden = false;
+      agentNote.textContent = "The AI review didn't run for this scan, so findings below have no Keep/Remove call. The checks themselves are still accurate.";
+    } else if (data.agent_truncated) {
+      agentNote.hidden = false;
+      agentNote.textContent = "This batch had a lot of issues, so Claude only reviewed the first 30 — later findings won't have a Keep/Remove call.";
+    }
+
+    // Claude decides one file per pair to quarantine (the training copy for a leak, the
+    // second file for a duplicate); look that decision up by file path to fold it into
+    // the same card instead of listing it again in a separate section.
+    const decisionIndex = new Map(decisions.map((d, i) => [d.file, i]));
+    function aiExtra(targetFile) {
+      const i = decisionIndex.get(targetFile);
+      if (i === undefined) return null;
+      const d = decisions[i];
+      const remove = actionFor(d) === "quarantine";
+      const toggle = localFiles.size
+        ? `<button class="toggle" type="button" data-decision="${i}">${remove ? "Keep instead" : "Remove instead"}</button>`
+        : "";
+      const chip = `<span class="chip ${remove ? "bad" : "good"}">${remove ? "Remove" : "Keep"}${overrides.has(d.file) ? " (your call)" : ""}</span>`;
+      return { chip, toggle, reason: d.reason ? esc(cleanNames(d.reason)) : null };
+    }
+    function withAi(defectChip, targetFile, fallbackExplain) {
+      const ai = aiExtra(targetFile);
+      return {
+        actions: `<span class="card-actions">${defectChip}${ai ? ai.chip + ai.toggle : ""}</span>`,
+        explain: (ai && ai.reason) || fallbackExplain,
+        collapse: !!(ai && ai.reason),
+      };
+    }
+
     if (data.leaked_pairs !== undefined) {
       leakSection.hidden = false;
-      const leakCard = (train, test, chip, detail) => leakContainer.appendChild(card(
-        `<span class="names">Test photo <span class="file">${esc(filename(test))}</span> matches training photo <span class="file">${esc(filename(train))}</span></span>` +
-        `<span class="chip bad">${chip}</span>`,
-        "Remove one copy, usually the training one, so your test score stays honest.",
-        detail,
-        [train, test]
-      ));
+      const leakCard = (train, test, chipLabel, detail) => {
+        const r = withAi(`<span class="chip bad">${chipLabel}</span>`, train,
+          "Remove one copy, usually the training one, so your test score stays honest.");
+        leakContainer.appendChild(card(
+          `<span class="names">Test photo <span class="file">${esc(filename(test))}</span> matches training photo <span class="file">${esc(filename(train))}</span></span>` +
+          r.actions,
+          r.explain,
+          detail,
+          [train, test],
+          r.collapse
+        ));
+      };
       leakedPairs.forEach(([train, test, dist]) =>
         leakCard(train, test, "Leak", hashDetail(dist)));
       similarLeaks.forEach(([train, test, sim, inliers]) =>
@@ -454,74 +489,60 @@
 
     if (duplicatePairs.length) {
       duplicatePairs.forEach(([a, b, dist]) => {
+        const r = withAi(`<span class="chip bad">${Number(dist) === 0 ? "Exact match" : "Very similar"}</span>`, b,
+          "These look like the same photo, pick one and remove the other.");
         dup.appendChild(card(
           `<span class="names"><span class="file">${esc(filename(a))}</span> and <span class="file">${esc(filename(b))}</span></span>` +
-          `<span class="chip bad">${Number(dist) === 0 ? "Exact match" : "Very similar"}</span>`,
-          "These look like the same photo, pick one and remove the other.",
+          r.actions,
+          r.explain,
           hashDetail(dist),
-          [a, b]
+          [a, b],
+          r.collapse
         ));
       });
     }
     similarPairs.forEach(([a, b, sim, inliers]) => {
+      const r = withAi(`<span class="chip bad">Edited copy</span>`, b,
+        "The same photo after a crop, mirror, or color change. Pick one and remove the other.");
       dup.appendChild(card(
         `<span class="names"><span class="file">${esc(filename(a))}</span> and <span class="file">${esc(filename(b))}</span></span>` +
-        `<span class="chip bad">Edited copy</span>`,
-        "The same photo after a crop, mirror, or color change. Pick one and remove the other.",
+        r.actions,
+        r.explain,
         editedCopyDetail(sim, inliers),
-        [a, b]
+        [a, b],
+        r.collapse
       ));
     });
     if (!dupCount) renderEmpty(dup, "None found, no duplicates in this batch.");
 
     if (blurryImages.length) {
       blurryImages.forEach(([p, sharpness]) => {
+        const r = withAi(`<span class="chip bad">Too blurry</span>`, p, null);
         blur.appendChild(card(
-          `<span class="names file">${esc(filename(p))}</span><span class="chip bad">Too blurry</span>`,
-          null,
+          `<span class="names file">${esc(filename(p))}</span>` + r.actions,
+          r.explain,
           `Laplacian variance: ${Number(sharpness).toFixed(1)} (lower = blurrier, flagged if ≤ 200)`,
-          [p]
+          [p],
+          r.collapse
         ));
       });
     } else renderEmpty(blur, "None found, every photo is sharp enough to use.");
 
     if (exifImages.length) {
       exifImages.forEach(([p, orientation, swapsDims]) => {
-        exif.appendChild(card(
-          `<span class="names file">${esc(filename(p))}</span><span class="chip bad">Check labels</span>`,
+        const r = withAi(`<span class="chip bad">Check labels</span>`, p,
           swapsDims
             ? "Displays turned 90°, which swaps width and height. Boxes drawn on the unrotated photo would land in the wrong place."
-            : "Displays flipped or turned 180°. Boxes drawn on the original photo would be mirrored.",
+            : "Displays flipped or turned 180°. Boxes drawn on the original photo would be mirrored.");
+        exif.appendChild(card(
+          `<span class="names file">${esc(filename(p))}</span>` + r.actions,
+          r.explain,
           `EXIF orientation tag: ${esc(orientation)} (${ORIENTATION_NAMES[orientation] || "unknown"}) — flagged because it isn't 1 (normal)`,
-          [p]
+          [p],
+          r.collapse
         ));
       });
     } else renderEmpty(exif, "None found, no rotation conflicts.");
-
-    if (data.agent_error) {
-      renderEmpty(dec, "The AI review didn't run for this scan, so there are no recommendations. The checks above are still accurate.");
-    } else if (decisions.length) {
-      if (data.agent_truncated) {
-        renderEmpty(dec, "This batch had a lot of issues, so Claude reviewed the first 30.");
-      }
-      decisions.forEach((d, i) => {
-        const remove = actionFor(d) === "quarantine";
-        const toggle = localFiles.size
-          ? `<button class="toggle" type="button" data-decision="${i}">${remove ? "Keep instead" : "Remove instead"}</button>`
-          : "";
-        dec.appendChild(card(
-          `<span class="names file">${esc(filename(d.file))}</span>` +
-          `<span class="card-actions">` +
-          `<span class="chip ${remove ? "bad" : "good"}">${remove ? "Remove" : "Keep"}${overrides.has(d.file) ? " (your call)" : ""}</span>` +
-          toggle +
-          `</span>`,
-          d.reason ? esc(cleanNames(d.reason)) : null,
-          null,
-          [d.file],
-          true
-        ));
-      });
-    } else renderEmpty(dec, "No recommendations, nothing needed a decision.");
 
     if (unreadableImages.length) {
       unreadableImages.forEach(([p]) => {
