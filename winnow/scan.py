@@ -43,7 +43,11 @@ def scan_folder(folder_path, test_folder_path=None):
     }
 
     if test_folder_path:
-        test_paths = [p for p in list_images(test_folder_path) if p not in unreadable_images]
+        try:
+            test_paths = list_images(test_folder_path)
+        except OSError as e:
+            unreadable_images.append((test_folder_path, str(e)))
+            test_paths = []
         result["leaked_pairs"] = find_leaked_pairs(readable_paths, test_paths)
 
     return result

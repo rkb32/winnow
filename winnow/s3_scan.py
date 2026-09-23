@@ -37,10 +37,18 @@ def upload_results(bucket, result):
 if __name__ == "__main__":
     bucket = os.environ["WINNOW_BUCKET"]
     prefix = os.environ.get("WINNOW_PREFIX", "")
+    test_prefix = os.environ.get("WINNOW_TEST_PREFIX")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         key_by_local_path = download_bucket_prefix(bucket, prefix, tmp_dir)
-        result = scan_folder(tmp_dir)
+
+        test_dir = None
+        if test_prefix:
+            test_dir = os.path.join(tmp_dir, "_test_split")
+            os.makedirs(test_dir)
+            key_by_local_path.update(download_bucket_prefix(bucket, test_prefix, test_dir))
+
+        result = scan_folder(tmp_dir, test_folder_path=test_dir)
 
     decisions, quarantined = [], []
     try:
@@ -58,6 +66,8 @@ if __name__ == "__main__":
     print("Blurry images:            ", result["blurry_images"])
     print("Risky EXIF orientation:   ", result["risky_orientation_images"])
     print("Unreadable images:        ", result["unreadable_images"])
+    if "leaked_pairs" in result:
+        print("Train/test leaked pairs:  ", result["leaked_pairs"])
     print("Results written to:       ", f"s3://{bucket}/{result_key}")
     print("Agent decisions:          ", decisions)
     print("Quarantined:              ", quarantined)

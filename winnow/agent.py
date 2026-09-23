@@ -58,7 +58,7 @@ def apply_quarantine(bucket, decisions, key_by_local_path):
     for decision in decisions:
         if decision.get("action") != "quarantine":
             continue
-        src_key = key_by_local_path.get(decision["file"])
+        src_key = key_by_local_path.get(decision.get("file"))
         if src_key is None:
             continue
         filename = src_key.rsplit("/", 1)[-1]
