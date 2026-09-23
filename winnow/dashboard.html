@@ -382,6 +382,10 @@
     document.getElementById("download-bar").hidden = true;
   }
 
+  function hashDetail(dist) {
+    return `perceptual hash distance ${esc(dist)} (flagged if ≤ 5), confirmed by shared keypoints or near-identical embeddings`;
+  }
+
   function editedCopyDetail(sim, inliers) {
     return `DNN embedding similarity ${esc(sim)} (candidate if ≥ 0.80), confirmed by ` +
       `${esc(inliers)} SIFT keypoints agreeing on one geometric transform (needs ≥ ${MIN_INLIERS})`;
@@ -427,7 +431,7 @@
         [train, test]
       ));
       leakedPairs.forEach(([train, test, dist]) =>
-        leakCard(train, test, "Leak", `perceptual hash distance: ${esc(dist)} (flagged if ≤ 5)`));
+        leakCard(train, test, "Leak", hashDetail(dist)));
       similarLeaks.forEach(([train, test, sim, inliers]) =>
         leakCard(train, test, "Leak, edited copy", editedCopyDetail(sim, inliers)));
       if (!leakCount) renderEmpty(leakContainer, "None found, your test photos don't appear in the training photos.");
@@ -439,7 +443,7 @@
           `<span class="names"><span class="file">${esc(filename(a))}</span> and <span class="file">${esc(filename(b))}</span></span>` +
           `<span class="chip bad">${Number(dist) === 0 ? "Exact match" : "Very similar"}</span>`,
           "These look like the same photo, pick one and remove the other.",
-          `perceptual hash distance: ${esc(dist)} (flagged if ≤ 5)`,
+          hashDetail(dist),
           [a, b]
         ));
       });

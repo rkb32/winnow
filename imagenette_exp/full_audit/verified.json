@@ -1,0 +1,2391 @@
+{
+ "counts": {
+  "different": 32,
+  "same_scene": 61,
+  "same_photo": 15
+ },
+ "results": [
+  {
+   "id": 0,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a silver Denon CD receiver with front display; val is a black mini hi-fi unit with a separate speaker, so these are different devices."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is a silver Denon CD receiver on white; val is a black mini hi-fi unit with a separate speaker, so they are different products."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a silver Denon CD receiver, while val shows a black mini hi-fi unit with a separate speaker, so these are different products and different photos."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 1,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train shows kite flyers on a brown dirt field in daylight; val is a paraglider silhouette against an orange sunset over dark water."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train shows a small kite/canopy over a sunny red-dirt field with a person standing; val is a paraglider silhouetted against an orange-to-navy sunset sky with no ground."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a small parachute over a red-dirt field with a person standing, while val is a paraglider silhouette against a sunset over dark water."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 2,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a green-yellow paraglider over a green lawn under blue sky; val is the dark paraglider silhouette against a sunset."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train has a bright green/yellow paraglider over a green grass field in daylight; val is a dark paraglider silhouette at sunset, a different scene."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a green-yellow paraglider over a green lawn in daylight, while val is a paraglider silhouette at sunset, so the scenes are unrelated."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 3,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a black boombox with twin built-in speakers and a cassette deck; val is a black mini-system with a separate speaker cabinet, so the products differ."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is a black boombox with twin round speakers and cassette decks; val is a black component mini system with a separate tall speaker."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a black boombox with a cassette deck and built-in speakers, while val shows a black mini-system with a separate speaker box."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 4,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a white garbage truck parked by a building on a lawn; val is the sunset paraglider silhouette, so both subject and scene differ."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is a white garbage truck parked by a building on grass; val is a paraglider silhouette at sunset, which has no subject in common."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a white garbage truck parked by a building, while val is a sunset paraglider silhouette, so they are different classes and scenes."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 5,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a green garbage truck at a dirt landfill under clouds; val is a blue parachute over a grassy airfield with a fence and road."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is a green garbage truck on a dirt lot under a cloudy sky; val is a blue parachute over an airfield with a road and a stone wall."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a green garbage truck on a dirt lot, while val shows a blue canopy over a grass field with a road and a stone wall."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 6,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train shows people gathering a yellow canopy on a hazy field with a town skyline behind; val is an empty green airfield with a small canopy, blue sky and a dark treeline."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train has people packing a yellow canopy on a hazy grey field with a town skyline; val has a blue sky, bright green grass, a small orange/blue canopy and a fence rail, and the two share no landmarks."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train is an overcast field with people, a yellow canopy on the ground and a city skyline, while val is a sunny green field with an orange canopy in the air and a tree line."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 7,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train has a grey hazy sky, a grey canopy, power poles and a distant town; val has a blue sky, a yellow-orange canopy, a green field, a dark treeline and a railing, so the locations differ."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train has a grey canopy in a white hazy sky with a yellow chute on the ground and flowers in the foreground; val has a blue sky with clouds, green grass and a multicolor canopy over a treeline."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train is a hazy grey day with a landing parachutist and distant buildings, while val is a blue-sky green field with a different canopy and horizon."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 8,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a small parachute in a pale blue-grey haze over a flat green field; val is a dark round canopy above a dark shoreline against a near-white sky."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is a small grey round parachute high in a hazy sky over a flat green field; val is a dark round parachute against a white sky over a treeline and water."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a tiny parachute in a hazy sky over a flat field, while val shows a dark round canopy against a white sky over a shoreline."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 9,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a small red kite against plain blue sky with no ground; val is a kite skier on a flat snow or ice plain with a horizon."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is a tiny red kite in plain blue sky with no ground; val is a snow kiter on a white snowfield with a horizon line."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train is a small red kite in an empty blue sky, while val is a snow-kiter on a white snowy plain."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 10,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train shows a long yellow kite and people running on grass under cloudy sky; val is an empty green airfield with a small yellow canopy under blue sky."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train shows a yellow kite held by several people on a grassy field under grey clouds; val is an empty green airfield with a small orange/blue canopy."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a yellow kite held by people on a grassy slope, while val is an empty sunny airfield with a small canopy far away."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 11,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a blue-white paramotor over ploughed farmland with bare shrubs at dusk; val is a yellow canopy over a mown green airfield."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is a blue/white powered paraglider at dusk over ploughed fields with bushes; val is a blue-sky green airfield with a different, orange/yellow canopy."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a powered paraglider at dusk over a field with a bare bush, while val is a sunny blue-sky airfield."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 12,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a small canopy above a parked twin-engine plane at dusk; val is a pink canopy landing among several people on a grass field."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is a lone parachute in a dusk sky above a small airplane on a runway; val is a multicolor canopy collapsing on grass among several people."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train shows a tiny parachute in a hazy sky with an aircraft silhouette on the ground, while val shows a landed canopy with people on grass."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 13,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The cloud field matches under one homography (132 inliers, residual about 0.3px), but the parachutist sits in a different spot and only val shows the treeline and ground, so these are consecutive upward shots of the same sky."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "After alignment the cloud formations match almost pixel for pixel (132 homography inliers), but the parachute sits beside the lower-left cloud in train and on top of the upper cloud in val, and val is framed lower to include the horizon and trees, so these are burst shots."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same cloud field aligns with a 1.35 degree rotation at the same scale, but train is landscape sky-only while val is portrait with the ground, and the parachutist sits in a different spot relative to the clouds, so these are separate shots."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 14,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The same Republic Services Mack truck and trees align under a single 1.5x scale (119 of 122 matches within 1px); a moving truck would have shifted against the trees in a separate shot, so val is a tighter crop of the same photo."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "Val is a 1.5x crop of train: a pure-scale homography aligns the Republic Services truck, cab occupants, utility pole, smoke and trees with a median residual of 0.23 px, and I found no difference in pose or position."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The same brown and white Republic Services truck and the trees and wires behind it fit one similarity transform (120 of 121 matches, 0.23 px residual), so val is a 1.5x tighter crop of the same capture; a moving truck would not line up with the background in two separate shots."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 15,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same brass quintet, church and red carpet with nearly identical poses, but the crops differ (val adds a trumpeter on the left, train shows more floor) and about 1-1.5px of non-rigid misalignment remains (only 61 of 116 matches within 1px), which fits a near-simultaneous burst frame; it could possibly be a re-processed copy of one photo."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "It is the same brass quintet in the same church, but alignment residual (~0.9 px) is about 4x that of true copies, the trombonist's head tilt and slide angle differ, and val includes an extra trumpeter on the left, so these are two shots moments apart."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same brass quintet in the same church with near-identical poses, but there is a 1.1 degree rotation and a mismatch that grows to about 5 px toward the foreground chairs (parallax), meaning two captures from slightly different spots; val also shows an extra trumpeter on the left."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 16,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The same man in a blue jacket holds the same tench with the same expression and hand placement, aligned to about 0.27px; in train the lakeside background has been replaced by flat grey."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "The man's face, smile, hand grip and the fish align exactly (0.27 px median residual), but train's background has been replaced with flat grey while val keeps the original green bank and fishing rods: the same capture with the background edited."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The same man, fish, hand grip and jacket folds align at 0.27 px (108 of 114 matches); train is the same capture with the riverside background painted over in flat grey."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 17,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same outdoor horn section (curly-haired woman in glasses, man in a navy shirt, man in a blue shirt), but the framing differs, a woman in a white patterned top appears only in val, and heads and horns shift by about 1px or more (85 of 123 inliers)."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "It is the same horn section (curly-haired woman with glasses, bearded young man, man in blue), but in train the young man leans forward and down while in val he sits upright, framing differs (music stand in train, a woman in a white patterned shirt in val's foreground), and residual flow is high."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same horn section appears (young man playing, woman in sunglasses, man in a blue shirt), but val has a polka-dot-shirted woman blocking the foreground, heads have moved, and only 60 of 123 matches fit one transform."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 18,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The identical blue Dongfeng compactor truck cutout (same wheel angles, same driver in the cab, same door text) aligns to about 0.23px; train puts it on a white brochure background with company text and val puts it on a sky and mountain background with a watermark."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "The blue Dongfeng compactor truck, including the driver, mirrors and windshield reflections, aligns at 0.23 px residual; only the composite background differs (white with a company header in train, sky/landscape with a www.hbjndf.com watermark in val)."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The same Dongfeng blue compactor truck cutout aligns at 0.21 px, placed on a white banner with a company header in train and on a sky and sea backdrop with a watermark in val."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 19,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same fenced wooded yard, tree trunks and seedlings, with the camera panned about 62px; the black-and-white dog is leaping mid-left in train but near the right-hand tree in val, so these are shots moments apart."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The fence, tree trunks and ground plants align perfectly from a fixed viewpoint, but the black-and-white dog is running near the left tree in train and leaping further right in val, so these are burst shots."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same backyard with the same wooden fence and tree trunks and the same black-and-white dog, but the dog is running on the left in one and leaping on the right in the other, and the framing shifts about 60 px."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 20,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Both are shot through the same red-hooded windshield at the same blue garbage truck, parked cars, and orange-shirted and blue-shirted workers on the same street, but the workers and bins are in different positions."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same blue rear-loader truck (same white patch and placard on top), the same two workers in a blue shirt and an orange shirt, and the same red car hood appear in both, but the truck distance, worker positions and parked car/blue cooler differ, so these are separate frames shot from the following car."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Both are shot through the same red car windshield at the same blue garbage truck on the same tree-lined street, but the workers and bins are in different positions (the val adds a man in an orange shirt and a blue crate), so these are separate frames."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 21,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The same pile of tench, cropped slightly differently: one homography aligns the two with about 0.3px median error and near-zero residual difference (NCC 0.99)."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "Val rotated exactly 90 degrees aligns with train: 83 of 88 SIFT matches are inliers, reprojection error about 0.3 px and mean pixel diff 7.6, with every fish, eye and fin in the same place."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The val is the train image of the tench school rotated 90 degrees; after SIFT/ECC alignment every fish, fin and eye overlaps (high-pass NCC 0.93, ECC 1.00)."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 22,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "The sky, palm trees, sea backdrop and clzqc.com watermark are the same stock composite, but the trucks are different: a white sealed tank body versus a blue hook-lift bin."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Only the stock sky/palm/sea backdrop and clzqc.com watermark match; train shows a hook-lift truck with a tilted blue skip, val a sealed tank body with red Chinese characters and a ladder."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "The sky, palm trees and clzgc.com watermark are the same stock composite in both, but the trucks pasted onto it are different (a blue hook-lift skip truck vs a white/blue tank truck with red characters), so the subject differs."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 23,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The same truck, buildings, parked scooters and tree line up exactly; the train copy is a photoshop with GReddy/AEM decals and custom rims pasted over the BCNeta livery."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "The building facade, windows, scooters and tree align exactly at 1.5x scale (background residual near zero); train is the val photo with the truck digitally edited (Greddy/AEM decals replacing BCNeta!, chrome rims, added exhaust)."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The train is a photoshopped crop of the val: the building, balconies, motorbikes and truck body align exactly (NCC 0.84 on the background), and only the decals (GReddy/AEM instead of BCNeta!), chrome rims and exhaust were edited in."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 24,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The train close-up is a zoomed crop of the val dog's head: it aligns at 0.49x scale with a mean pixel difference of about 3."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "Train is a 2x crop of the val dog's head: 78 of 84 matches are inliers, mean diff 6.6, and block shifts are 0 px everywhere, down to the same forehead white spot and the same ear curls."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The train close-up is an enlarged crop of the val dog's head; the val region warped into the train frame matches almost pixel for pixel, down to the white forehead spot and ear fur (median diff 4, NCC 0.89)."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 25,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The same Husqvarna 335XPT catalog image with identical highlights and label placement; the train copy is rotated and cropped, the val copy has a green border."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "The same Husqvarna 335XPT product shot: train is val rotated about 17 degrees and cropped, with gray horizontal lines added and no green frame, and every chainsaw block aligns at 0 px with correlation 0.93-0.99."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "It is the same Husqvarna 335 product shot, rotated about 17 degrees and cropped in the train with grey stripe graphics added; the body details align at NCC 0.84."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 26,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same tench in front of the same algae-covered aquarium rocks, but the fish's body angle and fin positions differ and the background has shifted."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The mossy aquarium rocks align, but the tench has moved relative to them (about 5-8 px of residual flow on the fish and lower area, and a different fin position), so this is the same fish and tank shot moments apart."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same tench is in front of the same mossy aquarium rocks and sand, but its position against the rocks differs between frames (low high-pass NCC 0.32), so these are two captures."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 27,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same Shell V-Power pump, pillars and shopfront from nearly the same viewpoint (the pump aligns with 0.2px error), but a white car in one is replaced by a red pickup and a posing man in the other."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same Shell pump and station shop are shot from the same camera position (scale 1.00, rotation 2.5 degrees), but train has a white car and no person while val has a red pickup, a posing man and differently hanging hoses."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same Shell pump (same nozzle colours, display and hose drape) and station are shot from an almost identical viewpoint and align at scale 1.0, but the train has a white car and the val has a red pickup and a boy posing, so the moments differ."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 28,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same bald man in a teal shirt, the same gold saxophone with a copper bell on the table and the same room, with a different pose and framing (horn player beside him in train, holding a soprano sax in val)."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same bald older man in a teal shirt and the same gold saxophone with a copper bell lying on the table appear in both, but his pose and instrument differ and the younger horn player appears only in train."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same bald man, gold saxophones on the table and rehearsal room appear from different angles, with a horn player beside him in the train and him holding a soprano sax in the val."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 29,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same horn player, stone wall and blue clothespin, but after aligning on the wall his face and mouthpiece are offset by several pixels, so his head moved between shots."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same curly-haired horn player in a navy T-shirt, the same blue clothespin and the same rock wall appear after about 22 degrees of rotation, but the clothespin and horn bell are shifted about 7 px relative to his arm, so the frames differ."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same curly-haired horn player in a navy T-shirt, with the blue clothespin on his music against the same stone wall, has his arm down in the train and raised in the val."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 30,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The same Dongfeng blue-cab compactor truck image at an identical angle; it sits on a white company header in one and is composited onto a mountain-lake backdrop with a text overlay in the other."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "The same Dongfeng compactor-truck cutout (same driver in the cab, reflections and red side characters) aligns at 0.92 scale; only the composited background (company brochure vs mountain lake) and the overlaid text differ."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The same Dongfeng compactor truck cutout (identical angle, driver, red/white bumper stripes, Chinese side text) sits on a white company header in the train and a mountain-lake backdrop in the val; the truck region aligns at NCC 0.73."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 31,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same horn player, shot rotated about 90 degrees relative to the val; after alignment his body and shirt are offset relative to the horn and face, with residual shifts up to about 7px, so this is a different frame of the same burst."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same horn player, clothespin and rock appear after about 88 degrees of rotation, but his shirt and arm are shifted 4-6 px relative to the horn and rock (a non-rigid difference), so this is a separate portrait-orientation frame."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "It is the same horn player, blue clothespin and stone wall as the val, but the train shows him leaning over from a different angle with his arm lower, so it is a different frame of the session."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 32,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same young man holding the same tench against the same branches in a nearly identical pose, but after alignment the fish head is shifted about 6px and the face about 3px relative to the hands, so it is a different frame (the train copy also has an added white border)."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same man, tench and bushes appear, but once the background is aligned his face is shifted about 5 px right and the fish/hands 7-9 px up, so these are near-identical burst frames rather than one image (train also has a border and boosted color)."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same young man holds the same tench in front of the same bushes, but after alignment the fish overlaps while his face ghosts (his head is tilted differently and his eyes more open in the train), so these are burst frames rather than one image with a border added."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 33,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same black-and-white springer in front of the same purple flowers and green foliage, but the ears differ: straight in train, curled and flared outward in val."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same black-and-white springer spaniel sits in the same garden with purple flowers and the background aligns, but val is closer, and the dog's right ear flares out in val while it hangs down in train."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "It is the same black-and-white springer in front of the same purple flowers and shrubs, but the train is wider with the tail up and the val is closer with the ears flared differently."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 34,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same red-mohawk chainsaw juggler in front of the same stone building, fringe banner and crowd, holding the saw overhead in one and at waist height in the other."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same red-mohawk chainsaw juggler, stone building and Fringe banner appear, but in train the chainsaw is tossed overhead while in val he holds it at his chest facing the camera, with a different audience arrangement."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same red-mohawk juggler, stone building, blue banner and crowd appear in both, but he holds the chainsaw raised overhead in the train and at his waist with a ball in his mouth in the val."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 35,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same hooded worker cutting the same tree beside the same white truck and leaning sapling, in a different kneeling position and at a different cut stage."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same man in a gray hoodie is cutting the same tree in front of the same truck numbered 38-16, but his kneeling position, the saw angle and the person visible in the cab differ."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "It is the same hooded man sawing the same tree, next to the same thin sapling and white truck marked 38-16, but his position differs and the val shows the open truck cab, so the frames and framing differ."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 36,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same juggler, building, fringe banner and crowd as #34, but he is in a different pose, displaced by about 60px relative to the background."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same juggler, building and RBS/Fringe banner appear, but in train the chainsaw is in the air and he holds a second object, while in val he holds the saw at his chest."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "It is the same juggler, building facade and banner as the val, but in the train he is juggling with the chainsaw in the air and the crowd is framed differently."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 37,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "The same church facade (San Agustin style), but photographed on a different occasion: overcast white sky with parked cars and a tree in train, blue cloudy sky with tighter framing in val; not a burst."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "The same landmark church (San Agustin facade and bell tower) is shot on different occasions: overcast white sky with trees and parked cars in train versus blue sky with dark clouds and a more frontal viewpoint in val."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "It is the same landmark church facade, but taken on different occasions (white overcast sky with parked cars and a tree in the train, blue sky with clouds and no cars in the val) from different positions, so it is not a burst."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 38,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The val is a tighter, higher-detail crop of the same capture: the man in the red plaid shirt, orange earmuffs, chainsaw, gloves and chain all align to within about 1px at train resolution."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same lumberjack in a red plaid shirt with orange ear muffs and the same log setup appear, but train is a wide shot showing the WELCOME bear carving while val is a close-up with a different chainsaw pose."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The val is a tighter crop of the train: the man's pose, orange earmuffs, plaid shirt, chainsaw bar and chain overlap with no ghosting after alignment (ECC 0.95)."
+    }
+   ],
+   "tiebreak": "Val is a crop of the same capture, about 1.75x tighter. After a single near-isotropic affine (SIFT/RANSAC, then ECC 0.97 at train resolution), the man's head tilt, both gloved hands, the wristwatch, the chainsaw bar angle and the dangling chain on the log all land on the same spots. Per-patch phase correlation leaves residual shifts of about 1 px or less, noisy, with no subject-vs-background offset, so nothing shows him moving between two burst frames. The skeptic's 'different chainsaw pose' is a misreading: the waist-level bar is identical in both, and the lower horizontal bar in train is simply outside val's frame. Two caveats: val is more saturated, and a thin strip on its left (a yellow-clad bystander) falls just outside train's frame, so train itself was likely cropped from a larger original. Files: C:\\Users\\ranje\\Desktop\\opencv-comp-2026\\imagenette_exp\\imagenette2-160\\train\\n03000684\\n03000684_17309.JPEG and ...\\val\\n03000684\\n03000684_11180.JPEG.",
+   "how": "tie-break"
+  },
+  {
+   "id": 39,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same liver-and-white springer with a pink bandana and red leash on the same brick path next to the same person's sandaled feet, with its head turned away in one and facing the camera in the other."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "The same brown-and-white spaniel with a pink collar lies on the same brick path beside the same jeans-and-sandals feet and leash, but its head is turned away in train and faces the camera in val."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "The same springer with a pink bandana lies on the same brick path next to the same jeans-and-sandals feet and red leash, but its head faces away in the train and toward the camera in the val."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 40,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same dog show, same woman in red jacket kneeling with the same springer and the same woman in black in the background, but in the val shot a judge in a grey suit is bending over the dog and the handler's head and the framing have shifted."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same woman in red jacket with badge, same liver-and-white springer and same show-ring tents and people, but a man in a grey suit is now reaching for the dog and her hand and position have changed, so it is a different frame."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same dog show moment: the same woman in a red jacket with a yellow badge stacks the same liver-and-white springer while the same man in a grey suit stands at left in train and bends over the dog in val, so these are separate captures."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 41,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same low-angle setup: ball on a red/orange tee in tall grass with the same reddish-brown hedge band and cloudy sky, but train shows a plain ball on the left and val shows a 'La Quinta Rentals' logo ball on the right, and the grass blades do not match pixel for pixel."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Both are low-angle shots of a ball on an orange tee in grass, but the train ball is plain while the val ball has a big 'La Quinta Rentals' logo, and a mirrored overlay shows different ball size, grass blades and sky exposure; it is probably the same photographer's setup, but the ball is not clearly the same one."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Borderline: both show a low-angle golf ball on a red tee in tall grass with a reddish-brown field band under an overcast sky, but the train ball has no logo and the val ball has a crisp 'La Quinta Rentals' logo, and the horizon slopes the opposite way, so at best this is the same shoot."
+    }
+   ],
+   "tiebreak": "Val is the train photo mirrored, scaled about 1.2x and cropped, with a 'La Quinta Rentals' logo pasted on and the sky brightened. SIFT found 55 of 58 matches fitting one similarity transform (scale 1.201, no rotation) across grass, hedge band and ball. After warping, the difference map is near-black everywhere (median pixel difference 4.3/255) except the logo, the train ball's small dark mark that val removed, and a mild sky exposure shift. The grass blades and dimple pattern line up exactly, so the reviewers' 'different blades/ball' reading came from the thumbnails and the unmirrored view.",
+   "how": "tie-break"
+  },
+  {
+   "id": 42,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same man in white T-shirt cutting the same log on a yellow sawbuck in front of the same trees, but the log's position, the sawdust spray and his posture differ between the two frames."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same man in white T-shirt and dark shorts, same log on the yellow sawhorse, same orange chainsaw and tree backdrop, but his stance, the saw angle and the sawdust spray differ."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same man in a white T-shirt and dark shorts sawing the same log on a yellow stand in front of the same trees, but his arm and leg positions and the sawdust spray differ between frames."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 43,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same man in camo holding the same dark fish beside the same blue cooler on a wooden deck, but the val shot is framed wider and the fish and his face are in a different position."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same man in camo jacket holding the same dark fish beside the same blue cooler on a wooden deck at night, but the val shot is framed wider and the fish is held lower and at a different angle."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same man in camo holding the same dark tench next to the same blue cooler on a wooden deck; train is a tighter shot with the fish held flatter, while val is wider (pink flower, deck boards) with the fish tilted."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 44,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Same Echo brochure template with grey lines, but the train saw is an 18-inch 45cc rear-handle model with different callouts, while the val saw is a 16-inch 33.4cc model with a purge bulb label."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Both are Echo brochure-style callout images, but they show different saw models: an 18-inch bar with 45cc engine and cartridge-filter callouts versus a 16-inch bar with 33.4cc engine and purge-bulb callouts."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Two different ECHO chainsaw catalog images: train is an 18-inch bar, 45cc model with bumper-spike and carburetor callouts, and val is a 16-inch bar, 33.4cc model with purge-bulb and oiler callouts."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 45,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same blue garbage truck, yellow taxi and scaffolded building on the same NYC street, but the truck and taxi are at different distances and the framing differs, so these are consecutive shots."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same blue-and-red garbage truck, same yellow taxi and same street with blue construction scaffolding, but the truck is much farther away in val and the taxi has moved relative to it."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same NYC street with the same blue truck with headlights on, the same yellow taxi and the same blue scaffolding, but the camera distance and the taxi's position relative to the truck differ."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 46,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same springer spaniel in front of the same wooden cabinet with the same bone-shaped bed and steel bowl, but the dog's head is raised in train and lowered in val."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same springer spaniel in front of the same wooden cabinet with the same bone-shaped feeder and steel bowl, but the dog's head is lowered and turned and the camera framing differs."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same springer spaniel in front of the same wooden cabinet with the same steel bowl and bone-shaped mat; the dog faces the camera in train and has its head lowered in val."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 47,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The cloud layer lines up under a homography, so this is the same jump, but train shows the tandem under deploying canopy lines while val shows the tandem group in freefall under a drogue, a different moment."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same tandem pair (passenger in light blue with red shoes and sleeves) over the same cloud deck: train shows them hanging at line stretch far below the camera, val is a close shot of the black deployment bag lifting off, so these look like frames from one deployment sequence."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same tandem pair (light-blue legs, red and dark suits) over the same broken cloud deck: train shows them hanging vertically under stretched lines, val shows them flat under the black deployment bag, i.e. successive moments of one deployment."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 48,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "Same golf course shot with identical cloud streaks, treeline and ball position aligned by homography; train is the same image with a white frame, drop shadow and different tone mapping from val's HDR look."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "Identical cloud shapes, tree line, dirt patches and ball position; train is the same picture cropped slightly narrower inside a white drop-shadow frame, and val has stronger HDR saturation."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "Identical golf ball position, cloud shapes, tree line and fairway; the train copy only adds a white picture-frame border and drop shadow."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 49,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "The same cut log and sawdust align precisely by homography, but train is a blurred close-up of a standing sawyer in jeans while val shows the hooded man kneeling, a different moment of the same cutting."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same cut log face with the same knot, same orange-and-white chainsaw, yellow gloves, jeans and spruce background; train is a blurred close-up mid-cut and val is a wider shot of the man in a grey hoodie kneeling beside the log."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same freshly cut log with its pale cut face, the same yellow gloves, jeans and orange-white chainsaw, but train is a blurry close-up mid-cut and val is a wider shot of the man in a grey hoodie kneeling beside the log."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 50,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same rear-loader garbage truck on the same residential street with the same siding house and blue bin, but the truck has moved farther down the road in val."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same side-loader garbage truck seen from the rear on the same residential street with the same blue-lidded bin, but the truck has driven farther away and a second bin appears in val."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same silver rear-loader garbage truck on the same street with the same grey siding houses, but the wheelie bin moves from behind the truck (train) to its right side (val) and the framing is wider in val."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 51,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Identical LONGMA ad background (logo, cloud, trees, grass, cnlonghorse.com URL, aligned at zero offset), but train shows the sweeper truck from the front and val shows it from the rear with the arrow board."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "The LONGMA logo, cloud, trees, grass and cnlonghorse.com watermark are one composited ad template, but the trucks differ: a white sweeper with front brushes versus the rear of a tanker with an arrow board and red-white chevrons."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Identical composited ad template (LONGMA logo, same cloud, grass and trees, cnlonghorse.com watermark) with the sweeper truck shown from the front in train and from the rear in val, so this is a shared-template leak rather than a burst."
+    }
+   ],
+   "tiebreak": "Both images use the same composited LONGMA ad background (logo, cloud, trees, grass, cnlonghorse.com URL), but the trucks are different vehicles, not one truck seen from the front and the rear. Train shows a white sweeper cab with a blue/red decal and red front brushes. Val shows a silver tanker body with a red diagonal stripe, a rear arrow board, a red-white chevron bumper and a side-mounted brush arm. Only the shared template links them, which is not a burst of the same subject.",
+   "how": "tie-break"
+  },
+  {
+   "id": 52,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same cloud layer aligns closely under homography (same jump as the val), but train shows a single tandem hanging under canopy lines while val shows the group in freefall under a drogue."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same tandem jump as #47: passenger in light blue with red and instructor in black hanging under a green-dark canopy at line stretch over the same cloud layer and blue horizon, while val is the close shot of the same pair as the bag lifts."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same tandem jump as val: the same light-blue, red and dark suits over the same cloud deck, with the pair hanging vertically under the opening green-and-black canopy in train versus flat under the black deployment bag in val."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 53,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same yellow-cab blue compactor truck on the same cobbles with the same tree shadows, but parallax on the wheels and cab and different trees at the frame edges show a second shot from a slightly moved viewpoint."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same yellow-cab blue garbage truck with white stripe on the same paving under the same tree shadows, but the camera position differs: val shows a red-leaf tree behind the truck and the shadow pattern on the body has changed."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same yellow-cab blue compactor truck parked in the same spot with the same tree shadows on its side and the same paved ground, but the camera has moved back and to the side in val, so the whole truck body and a reddish tree behind the cab are visible."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 54,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same desert terrain, highway, town grid and parachutist, with the terrain matching by homography, but train looks straight down while val is tilted up to show the horizon and blue sky."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same tandem pair under the same lime-green and black canopy over the same desert hills, highway and suburb; train looks straight down while val is angled to show the horizon and blue sky."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same tandem under a drogue over the same desert suburb, highway and reservoir; train looks steeply down at the ground while val shows more sky and horizon with the jumpers placed differently."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 55,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same dog show with the same judge in a tan suit, the same handler in a brown jacket, the same springer and tent, but the handler kneels in train and stands bent over in val, and val is framed wider."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same judge in a tan suit, same handler in a brown jacket with yellow armband, same springer, and the same striped tent and white car, but in val the judge is examining the dog's head and the handler is bent over it."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same dog show ring with the same man in a grey suit, the same judge in a brown jacket, the same springer and the same tent and white car, but the poses differ (the judge crouches in train and stands in val) and the orientation differs (portrait vs landscape)."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 56,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same springer in front of the same wooden cabinet with the same bone bed and steel bowl, but the dog faces the camera in train and looks sideways in val, with different framing."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same dog, cabinet, bone-shaped feeder and steel bowl as #46, but here the dog has its head turned right toward the camera and the frame shows more of the cabinet top."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same springer, cabinet, steel bowl and bone-shaped bed; val is framed higher (drawers visible) and the dog is looking to the right instead of at the camera."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 57,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Shared Echo brochure layout, but the train saw is a 14-inch top-handle model with SAIS2 and lanyard-ring callouts, while the val saw is a 16-inch 33.4cc rear-handle model."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Same Echo brochure layout but different models: a 14-inch top-handle saw with SAIS2 and lanyard-ring callouts versus a 16-inch rear-handle saw with 33.4cc and purge-bulb callouts."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Different ECHO chainsaw models: train is a 14-inch top-handle saw with SAIS2 and lanyard-ring callouts, and val is the 16-inch, 33.4cc rear-handle saw with purge-bulb callouts."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 58,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The same truck cutout (identical pose, Chinese characters, ladder and wheels, aligned by homography with low residual) is pasted onto different backgrounds (desert vs palm-tree sky) with different watermarks (dijfqc.com vs clzqc.com)."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "The truck is the same product-photo cutout (identical blue-white body, red characters, roof rails, lift frame and wheel positions) pasted onto different backgrounds, desert versus beach with palms, with different watermarks (dfjfqc.com vs clzqc.com); the vehicle pixels come from one capture."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The same cutout of the blue-and-white garbage truck (same Chinese characters, lift frame, wheel spacing and proportions) is pasted onto a desert background with a dfjfqc.com watermark in train and a palm-tree sky with a clzqc.com watermark in val, so it is one truck capture with the background replaced."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 59,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same black cassette recorder with the same orange-label tape and the same Photographers Direct watermark, but train is a tight crop with the lid closed while val is a wider shot with the clear lid raised."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same black Ferguson recorder with the same orange '60s Hall of Fame' cassette and PHOTOGRAPHERS DIRECT watermark, but train is a closer, higher-angle shot with no lid in frame while val is wider with the clear lid raised, and the watermark is the same size in both, so val is not simply an upscaled crop of train."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same black cassette recorder with the same orange-label tape and the same PHOTOGRAPHERSDIRECT.COM watermark, but train is a tight shot with the lid closed and val is a wider angle with the clear lid raised."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 60,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Two different Echo chainsaw catalog images: the train one is an orange 36.3cc model with G-Force labels, the val one is a white-bodied 33.4cc model with a red handle and different callouts."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Both are Echo chainsaw spec graphics with the same callout layout, but train shows an orange '36.3 cc Power Boost Vortex' saw and val a white/grey '33.4 cc' saw with a 'Purge bulb' callout, so they are different products and images."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Two different Echo chainsaw models (orange body with 36.3cc callout vs grey body with 33.4cc callout); only the marketing callout template and ECHO bar logo match."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 61,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same tandem skydivers in the same outfits (white shirt, teal suits, red gloves), but after alignment the arm positions and expressions differ and only the val shot shows the drogue line, so these are burst frames."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same tandem skydivers in identical white shirt, teal suit and red gloves against blue sky, but the arm positions differ (front jumper's arms spread flat in train, one raised in val) and val shows a white bridle line at top: consecutive frames."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same tandem skydivers (white shirt, cyan suits, red gloves, goggled instructor) against the same blue sky, but arm and leg positions differ, so these are burst frames."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 62,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "The val image is a tighter crop of the same angler holding the tench: finger placement and the white-spotted tail fin are identical, and SIFT gives 158/170 inliers under a pure 1.89x scale."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "Val is a tighter crop of the same angler-with-tench shot: fish angle, hand placement, red belly patch, dorsal fin behind and speckled tail all line up, with no pose change beyond cropping off the face."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "Same man in blue jacket holding the same tench; the val image is a tighter crop, and alignment gives uniform high correlation everywhere, including the dark background."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 63,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same silver side-loader garbage truck on the same street of white mobile homes, but the truck has moved and the bin sits in a different spot relative to it."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same silver side-loader garbage truck on the same mobile-home street, but the bin sits behind the truck in train and beside the cab in val, and val has an extra blue-lid bin at bottom-left, so the truck had moved between shots."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same silver side-loader garbage truck in the same trailer park with the same corner watermark, but the truck is at a different distance and position and the bins differ."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 64,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same fairway, flag, tree line and watermark, but the ball sits at a different position and size in each frame, so these are separate captures."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same fairway, flag and '(c) Rob...' watermark with a same-size ball, but the ball is lower-left in train and lower-right in val, the ball-to-flag offset differs and the tree line differs, so these are separate frames of one setup."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same fairway, flag, tree line and bottom watermark, and only the horizon band aligns; the ball sits at a different spot in each frame, so these are separate captures."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 65,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same man in a red plaid shirt and orange earmuffs cutting the same chained log, but in the val frame the cut is further along, with sawdust flying and a different chainsaw angle."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same man in red plaid shirt and orange earmuffs cutting the same log with an orange saw, but in val the bar is deeper into the log and throwing sawdust while train shows a cleanly cut disc: burst frames."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same man (red plaid shirt, orange earmuffs, red chaps) cutting the same log at the same post and rail, but the cut has progressed and sawdust is flying in the val frame."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 66,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same green WM garbage truck with the white exhaust stack and rust streaks, shot from two different angles and distances."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same green WM garbage truck with identical rust streaks and white exhaust pipe, but train is a tight vertical shot of the open cab door while val is a lower, wider angle showing the WM logo and sky, so it is a different shot."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same green WM truck with the same rust streaks and white exhaust pipe under the same trees, but one shot is portrait and one landscape and the cab area does not align, so these are separate captures."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 67,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same white garbage truck, silver minivan, flower pots and date watermark, but the truck has moved further along the road and the sky and lighting differ."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same white garbage truck, silver minivan, flower pots and 'Ron-Zielinski.de Sep 8th 2008' watermark, but the truck and van sit differently relative to each other and val shows an extra truck at far right: taken moments apart."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same trailer park, garbage truck, silver minivan, flower pots and Ron-Zielinski Sep 2008 watermark; the truck has moved and the sky differs, so these are separate moments."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 68,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same rusty vintage 'Regular' gas pump: the train shot is wide with a building behind it, the val shot is a close-up of the dial face with trees behind, so these are different captures."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same rusty 'Regular' pump with its '67' tag, grey building and trees, but val is a closer, sharper shot and the right nozzle sits at a different size and spacing from the head than in train, which points to a different camera position."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same rusty 'Regular' pump with the same counters, nozzles and rail; the val is a closer shot, and parallax (rail position, lower cabinet misaligned) shows it is a separate capture, not a crop."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 69,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Two unrelated golf-ball stock shots: one is an extreme close-up on the fairway, the other shows the ball on the lip of a cup with the hole visible."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train is an extreme close-up of a ball on grass with no hole, while val shows a ball sitting on the lip of a cup: different compositions and settings."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "An extreme close-up of a golf ball on blurred grass vs a ball at the lip of a cup: different compositions with no shared specific detail."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 70,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same T-200 white garbage truck, twin bins, car roof in the foreground and houses behind, but the truck has turned and moved between frames."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same white 'T-208' garbage truck, black bins and car roof in the foreground at the same mobile-home park, but the truck is angled and close in train and head-on and further back in val, with a road sign now visible."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same white garbage truck with plate T-208, same trailer homes, blue-lidded bins and car roof in the foreground, but the truck is at a different position in each frame."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 71,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "Same stock golf-ball image sold under INMAGINE and Fotosearch watermarks: the grass texture matches with 84/104 SIFT inliers under one crop, 0.93 scale and 4-degree rotation, with a color shift."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Both are stock golf-ball-on-grass images, but train (INMAGINE watermark, ball at the top with lots of in-focus grass below) and val (Fotosearch caption, larger ball with little foreground) have different framing and grass, and nothing proves it is the same ball or session."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "Same golf ball on grass: after alignment the individual grass blades (including one blade sticking up at the ball's base) match, with high-pass NCC 0.57 against about 0 when offset; the two differ only in agency watermark (Inmagine vs Fotosearch), crop and color."
+    }
+   ],
+   "tiebreak": "These are the same ball and the same patch of green: after alignment the dimple pattern and individual grass blades line up, and the ball silhouette sits within 1 px with no parallax. But the frames are two different exposures. Train is a full 2:3 portrait frame and val a full 3:2 landscape frame, related by a consistent ~4.5 deg tilt and ~0.93 scale (RANSAC across thresholds). Each also shows what the other lacks: train has about 100 px (val scale) more foreground grass below the ball, and val has more grass to the right. So neither can be a crop of the other, and this looks like a vertical/horizontal pair shot from one setup, not one image resold under two watermarks.",
+   "how": "tie-break"
+  },
+  {
+   "id": 72,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same older man in a white hard hat, white T-shirt and blue chainsaw at the same log pile, standing in a different pose and position."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same older man in white hard hat, green earmuffs and white T-shirt with a blue chainsaw at the same log pile, standing upright in train and bent over cutting in val: burst frames."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same man (white helmet, blue earmuffs, yellow ear device, white T-shirt) with the same blue chainsaw at the same log pile, but his posture and the framing differ."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 73,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same dark truck with the SENGER-KRAFT baby banner at the same event with the same trees, but different people are in the foreground crowd."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same 'SENGER-KRAFT' garbage truck with the baby-poster ad at the same outdoor event, and the man with the green back logo appears in both, while the surrounding crowd differs (beer-holding man in train, red-haired woman in val)."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same Senger-Kraft truck banner with the baby graphic and the same event crowd, but people and framing differ between frames."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 74,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same RAF striped parachute with a trailing flag and smoke, but after aligning the canopies the flag, smoke and jumper's body position differ, so these are burst frames."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same red/white/blue 'RAF' canopy with a trailing flag and orange flare smoke, but the canopy tilt and the jumper's position under it differ, so these are consecutive frames of one jump."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same RAF canopy with a trailing flag and red smoke, against an identical sky with the same thin line in the upper-left corner, but canopy angle and jumper position differ, so these are moments apart."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 75,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Different springer spaniels: a liver-and-white dog lying by a green fence versus a black-and-white dog standing on a pale background."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train shows a liver-and-white springer lying by a fence on grass, val a black-and-white springer face close-up on a white background: different dogs and scenes."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Different springer spaniels: a liver-and-white dog lying by a green fence vs a black-and-white dog standing on a pale background."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 76,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_photo",
+     "note": "Same EIKI cassette recorder shot with identical angle, highlights and details; the val version has its dark textured background replaced with flat gray (SIFT: pure 1.085x scale, sub-pixel residual)."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_photo",
+     "note": "Identical OKI cassette recorder at the same angle with the same highlights, cassette window and button row; only the background changed, from dark texture to flat grey with jagged cut-out edges."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "Identical EIKI cassette recorder shot with the same perspective, which aligns by scale alone; the val is a cut-out of the same photo with the dark speckled background replaced by flat grey."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 77,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same worker in a gray hoodie cutting the same large tree in front of the same white service truck, but in a different pose (standing versus kneeling) and cutting position."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same man in grey hoodie and jeans with an orange chainsaw at the same big trunk, thin tree and white truck, standing in train and kneeling mid-cut in val: burst shots."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same man in grey hoodie and jeans, same tree trunk and same white truck with '38-1' lettering; he stands in one frame and kneels while cutting in the other."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 78,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Two different Husqvarna product photos: the train one is tilted with a motion-blurred bar and a different model badge on gray-line art, the val one is a straight-on 357 XP in a green frame."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Both are orange Husqvarna saws, but train is tilted about 20 degrees with a blurred bar over grey lines and a '35x' label, while val is level with a full 'Husqvarna' bar, a '357XP' label and a green border: different product photos."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Different Husqvarna catalog shots: the side labels differ (small blue script logo with a 35x number vs a large '357 XP' label), and the train image is rotated with a faded bar."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 79,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same small white truck with the blue hook-lift bin, same background and HBCLQC watermark, but the bin is level in one frame and tilted up in the other."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same white-cab hook-lift truck with the blue container, same red/white guard rails, same background buildings and HBCLQC watermark, but the container sits flat in train and is tilted up mid-lift in val."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same blue hook-lift truck, same background buildings and HBCLQC watermark; the container is level in one frame and tilted for dumping in the other."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 80,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same garbage truck, yellow-shirted worker, white bags and red car on the same tree-lined street, but the worker's position and the car's distance differ, so these are two different moments."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same garbage truck rear, loaded with the same yellow chair and white bags, same yellow-shirted worker and red car on the same tree-lined street, but shot from different distances with the car in a different spot."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same garbage truck, worker in yellow shirt, yellow-hatted figure and red car on the same tree-lined street, but shot from different distances with the red car in a different spot relative to the truck, so these are separate captures."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 81,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same red-haired girl in glasses with the same blue swirl backdrop and black outfit, resting her arms on a horn; the pose and the horn's appearance and angle differ, so it is the same photo session."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same glasses-wearing girl, same blue swirl backdrop and same arms-folded-over-horn pose, but her head tilt and the horn's angle and position differ, so it is a different frame from the same session."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same red-haired girl in glasses, same outfit and blue swirl backdrop, arms folded over a French horn, but the horn angle and her pose differ between the two shots."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 82,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same sleeping black-and-white spaniel with a purple tag on the same red leather couch; one shot is a close-up of the face, the other is wider and shows the paws and the patterned pillow."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same black-and-white spaniel with a purple collar asleep on the same brown leather couch beside the same blue/orange patterned pillow; one shot is a head close-up and the other is a wider body shot."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same black-and-white spaniel asleep on the same brown leather couch with the same purple collar tag and patterned pillow; train is a tight close-up whose eye slit and tag shape do not match the val frame, so most likely a separate zoomed shot (possibly a crop)."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 83,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same dog-show ring with the same grey-haired handler (armband) stacking the same liver-and-white springer beside the white car and canopy; the judge's position and the framing differ."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same dog show ring, same judge in a beige suit, same handler in a brown jacket with a yellow armband, same springer and same white car behind; the judge moves from walking up to bending over the dog."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same dog show ring: same judge in a grey suit, same handler in a brown jacket with yellow armband and the same springer, but the positions differ (judge walking away vs examining the dog)."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 84,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Two unrelated product cutouts: an upright tenor-horn-style instrument versus a gold French-horn charm with a jump ring, each a different object and angle."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "One is a tall upright tenor-horn product shot and the other is a small gold French-horn charm with a jump ring, so they are different objects."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train is an upright tenor/alto horn product photo and val is a small gold French-horn charm with a jump ring: different objects and images."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 85,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same girl in an orange shirt with a French horn on the same floral couch, with the same pink blanket, lamp and tie-dye cloth; her mouth and expression differ (tongue out vs. playing)."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same girl in an orange tie-dye shirt with the same horn on the same floral couch, pink pillow, lamp and tie-dye wall hanging, but her expression, the horn's position and the framing differ."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same girl in an orange tie-dye shirt on the same floral couch with a pink blanket, lamp, stained-glass window and tie-dye wall hanging, but her pose and the horn position differ."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 86,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "A golf ball on grass at night with bokeh lights versus a daytime fairway with golfers' legs in the background; the scenes are unrelated."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Night shot of a golf ball on dark turf with city lights behind versus a daytime ball on a fairway with golfers' legs behind: different scenes."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train is a golf ball on turf at night with bokeh lights and val is a daytime fairway with golfers' legs in the background: unrelated scenes."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 87,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "A red Shindaiwa 357 top-handle chainsaw on a beige background versus a different orange rear-handle chainsaw on a grey gradient."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "A red Shindaiwa 357 top-handle saw on a yellow background versus a different orange rear-handle saw on gray: different products and photos."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Train is a red Shindaiwa 357 top-handle saw on a beige background and val is a different orange rear-handle saw on a grey background: different products and photos."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 88,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same horn player session: the same brass horn, blue clothespin on the metal music stand and stone-wall background, with one shot showing the man and the other a close-up of the stand, clip and bell."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same horn player in a navy shirt against the same stone wall; the val shot is a close-up of the same music stand with the same blue clothespin and the same horn bell."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same horn player session: the identical blue clothespin on the same music stand, the same horn bell and the same stone wall, with val a close-up of the stand and bell rather than a crop of the train frame."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 89,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same two springer spaniels (one lying with a blue tag, one standing) on the same concrete patio beside the white cast-iron table, shot from a closer, different angle."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same two liver-and-white springers under the same white patio table on the same stained concrete, but the dogs' positions and the camera angle differ."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same two liver-and-white springer spaniels beside the same white wrought-iron table on the same stained concrete floor, photographed in different poses and framings."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 90,
+   "final": "same_photo",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "A yellow 'Vigor'-branded chainsaw on white versus a red chainsaw on a dark grey gradient; different products with similar composition."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "A yellow Vigor-branded saw on white versus a red unbranded saw on a gray gradient; the red one's top cover has a different shape and different rear controls, so these are separate product photos."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_photo",
+     "note": "The yellow Vigor saw and the red saw share an identical pose, and their handle, cover and bar outlines line up under a plain scale+shift alignment; this looks like one factory photo recolored with its background swapped and a bar decal added."
+    }
+   ],
+   "tiebreak": "A single scale+shift (similarity) transform lines the yellow saw up with the red one at sub-pixel accuracy: 29 SIFT inliers spread across the front handle, the bottom of the handguard and the rear knobs/handle, mean residual 0.7 px. After alignment the outlines of the bar, handguard, top cover and rear handle overlap, and small details sit in the same spots on both (the side vents, the clutch-cover holes, the two rear knobs, even the small hole near the bar tip). The yellow version is a soft, washed-out retouch: the top-cover facets are flattened, the chain looks painted, there is a Vigor decal on the bar and the background is white. So the \"different cover shape and controls\" the skeptic saw are retouching and blur, not a different pose or product. This is one studio photo, recolored and edited.",
+   "how": "tie-break"
+  },
+  {
+   "id": 91,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same fallen conifer trunk in the same woods with the same orange-and-white chainsaw resting on it; one frame is empty and the other has a man in red plaid and a hard hat posing with his foot on the log."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same fallen conifer trunk, same orange-and-white chainsaw, same yellow-leaved shrub, grass tuft and building in the background; the val shot adds a man in a hard hat and red plaid shirt standing on the log."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same fallen conifer trunk, the same orange Stihl saw, the same yellow-leaved shrub and the same splayed branches; train shows the saw alone on the log and val adds a man in red plaid sitting on it."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 92,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Two ECHO marketing diagrams with the same callout style but different models: a top-handle 26.3cc saw versus a rear-handle 33.4cc saw with different labels."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Two different ECHO chainsaw spec diagrams: a 26.3cc top-handle model and a 33.4cc rear-handle model, with different callout text."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Both are Echo marketing diagrams with callouts, but train is a top-handle model ('26.3 cc Power Boost Vortex') and val a rear-handle model ('33.4 cc'): different products and images."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 93,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same side-loader garbage truck beside the same blue bin in the same mobile-home park; one is shot from farther back through a window frame, the other is closer."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same silver side-loader garbage truck, same trash bin and same white mobile home in the same neighborhood; the train shot is taken through a window with a timestamp and the val shot is closer."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same side-loader garbage truck, the same mobile-home street and the same blue trash bin; train was shot through a window (frame edge and watermark visible) and val from closer, so separate captures."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 94,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same woman in a blue cardigan gaiting the same liver-and-white springer past the same purple tent at a dog show, at a different stride and framing."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same short-haired handler in a blue shirt gaiting the same liver-and-white springer past the same purple tent and gray car, in a different stride and framing."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same female handler in a light blue shirt and dark pants gaiting the same springer past the same purple canopy tent and grey car, captured moments apart."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 95,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Same roadside vantage point with the same hedge and gas station behind, but the subjects are different vehicles: a white dump truck versus a green Waste Management garbage truck."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Same roadside spot (same hedges and blue canopy), but the subjects are different trucks: a white dump truck versus a green WM garbage truck."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same camera spot: identical hedge row, blue gas-station canopy and tree line, but train shows a white dump truck and val a green WM garbage truck, so only the background is shared, not the vehicle."
+    }
+   ],
+   "tiebreak": "Both photos were taken from the same roadside spot: the same flowering hedge in front, the blue gas-station canopy at left and the same tree line. But the trucks are different vehicles. Train shows a white conventional-cab dump truck (long hood, Freightliner-style grille) with a dark tarped dump body. Val shows a green WM garbage truck with a white cab-over (Mack LE-style), the yellow WM logo and a packer body. So only the background is shared, not the subject, and this does not meet the same_scene bar.",
+   "how": "tie-break"
+  },
+  {
+   "id": 96,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same tandem skydive pair in matching red-and-turquoise suits over the same cloud layer; one shot is close up and the other is farther away with the drogue chute visible."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same tandem skydivers (red gloves, red-and-blue suits) over the same cloud layer; the val shot is farther away with the drogue chute out."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same tandem skydive pair with red gloves and boots and blue/purple suits over the same cloud deck, shot close before the drogue and farther away with the drogue deployed."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 97,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same man in a blue beanie holding the same tench by the same lake and reeds; the hold, framing and head angle differ slightly."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same man in the same blue beanie and jacket holding the same tench at the same pond, but his grip changes (a ring shows in the val shot) and the fish's angle differs."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same angler in a blue beanie and jacket holding the same tench on the same lakeside bank; the hat angle (logo visible only in val) and his pose differ."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 98,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same man in a purple fleece kneeling on the same grassy bank with the same keepnet of fish and blue bag; his pose and the fish he is holding differ."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same bald man in a purple fleece kneeling by the same green keepnet of fish with the same blue bag behind him, lifting a different fish in each shot."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same man in a purple fleece kneeling on the same grassy bank with the same green keepnet of fish and blue bag, in different poses (smiling at the camera vs looking down)."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 99,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same silver stereo with a blue display and speakers on the same dark table against the same wall; one is a frontal shot of the whole unit, the other a closer angled shot."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same silver-and-blue stereo on the same black shelf against the same wall, but the val shot is from a higher angle (the lid and its top text show) and cuts off the speakers, so it is a separate shot, not a crop."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same silver-and-blue mini hi-fi on the same black stand against the same wall; train is a wide landscape shot with both speakers and val a closer portrait shot from a different angle."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 100,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train is a yellow/black chainsaw alone on white, val is an orange/black chainsaw with a separate grey carry case, so these are different products that are both catalog shots on white."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Train shows a single yellow-green chainsaw on white, while val is a different product shot of an orange/red chainsaw plus a blue carry case, so these are different objects."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Two different chainsaw product shots: train is a yellow/black saw alone on white, val is an orange saw plus a blue carrying case, so the bodies and colors differ."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 101,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Same church facade (twin-tower baroque front, round window, cross) but two separate captures: train is a wide overcast view with parked cars, val is a tighter upward shot under blue sky with clouds, so the lighting and time differ."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Both show the same landmark church facade, but train is a wide shot under a flat white overcast sky with cars and trees in the foreground, while val is a tight close-up under a blue sky with dark clouds, so these are separate visits, not burst shots."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Same famous landmark (San Agustin-style church facade with bell tower) but separate captures: train is a wide street view under a white overcast sky with trees and cars, val is a close crop of the upper facade under a blue sky with clouds, so this is not one burst."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 102,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same bald, bearded man in a pink shirt and patterned tie holding the same french horn, but the head tilt, smile and background differ (grey siding on the left in train, red brick and greenery in val), so these are burst portraits from one session."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same bald bearded man in the same pink shirt and patterned tie holding the same French horn, but it is not the same frame: train has gray building siding at left while val has green foliage and red brick there, and the horn sits lower and rotated with its lead pipe at a different angle."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same bald bearded man in the same pink shirt and patterned tie holding the same French horn, but his head tilt, horn position and background (building edge on the left of train only) differ, so these are separate shots from one session."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 103,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same B&W french horn resting on the same carved wooden chair with ornate back panel, shot as a landscape close-up in train and a wider portrait framing in val."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same worn black-and-white French horn resting on the same carved wooden chair, but train is a close, higher-angle view with the bell rim seen almost face-on, while val is a wider, lower view showing the carved 'I H' chair back and the horn tilted at a different angle."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same B&W French horn resting on the same carved wooden chair (val shows the carved back with the 'I H' crest), but the horn's circle is round in train and tilted into an ellipse in val, so the camera angle changed between two shots of one setup."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 104,
+   "final": "same_scene",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "same_scene",
+     "note": "Same mud-splattered green WM garbage truck with white cab and vertical exhaust stack in autumn woods: train is a side view with a person at the cab, val is a close-up of the top and exhaust."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "same_scene",
+     "note": "Same rusty green WM garbage truck with the same white vertical exhaust stack, white cab roof, and white-scuffed front body corner, against the same autumn trees and overcast sky; train is a wide shot of it tilted into the woods with a man in blue, and val is a low-angle close-up of the body."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "same_scene",
+     "note": "Same rusty green WM garbage truck with the same rust blotches, white vertical exhaust pipe and autumn woods; train is a side view with a man at the cab, val is a closer angled view near the cab, so these are different shots taken moments apart."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 105,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Same factory yard with red flags and trees, and the same blue long-nose chassis, but train carries a white cylindrical tank body and val a white rectangular compactor box, so these are different vehicles."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Same factory yard with red flags, but they are different trucks: train has a rounded white tank body and val has a boxy compactor body with red Chinese characters and a green logo."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Two different blue Chinese garbage trucks in what looks like the same dealer yard (three red flags, same building): train has a round tank body with a side lifter, val has a boxy compactor body with red lettering and a watermark."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 106,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Both are rear views of WM trucks with CAUTION striping, but the fleet numbers differ (207258 vs 206652) and so does the setting (road with traffic lights vs residential lot with houses and hills)."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Two different WM trucks: train shows fleet number 207258 at a street intersection under a blue sky, and val shows number 206682 in a paved lot with houses, a hill, and yellow bollards."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Two different WM rear-loader trucks: fleet numbers differ (about 207258 vs 206682), and the settings differ (a road with a traffic light vs a residential parking lot with yellow bollards and hills)."
+    }
+   ],
+   "how": "unanimous"
+  },
+  {
+   "id": 107,
+   "final": "different",
+   "votes": [
+    {
+     "lens": "neutral",
+     "verdict": "different",
+     "note": "Train shows a red Phillips 66 pump beside an orange cabinet, val shows a red Texaco Fire Chief pump with a parking meter and wall signs, so these are different pumps in different rooms."
+    },
+    {
+     "lens": "skeptic",
+     "verdict": "different",
+     "note": "Different vintage gas pumps in different rooms: train is an orange Phillips 66 pump against a gray wall, and val is a red Texaco Fire-Chief pump next to a yellow car and a parking meter."
+    },
+    {
+     "lens": "matcher",
+     "verdict": "different",
+     "note": "Different vintage gas pumps in different rooms: train is an orange Phillips 66 pump beside a motorcycle picture, val is a red Texaco Fire-Chief pump next to a yellow car and a parking meter."
+    }
+   ],
+   "how": "unanimous"
+  }
+ ]
+}

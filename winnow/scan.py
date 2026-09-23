@@ -4,7 +4,7 @@ import sys
 from blur import compute_sharpness, is_too_blurry
 from duplicates import find_duplicate_pairs, find_leaked_pairs
 from exif_conflict import get_orientation, has_risky_orientation, swaps_dimensions
-from semantic import compute_embeddings, find_semantic_leaks, find_semantic_pairs
+from semantic import compute_embeddings, confirm_hash_pairs, find_semantic_leaks, find_semantic_pairs
 
 
 def list_images(folder_path):
@@ -36,8 +36,8 @@ def scan_folder(folder_path, test_folder_path=None):
         if has_risky_orientation(orientation):
             risky_orientation_images.append((path, orientation, swaps_dimensions(orientation)))
 
-    duplicate_pairs = find_duplicate_pairs(readable_paths)
     embeddings = compute_embeddings(readable_paths)
+    duplicate_pairs = confirm_hash_pairs(find_duplicate_pairs(readable_paths), embeddings)
     result = {
         "duplicate_pairs": duplicate_pairs,
         "similar_pairs": find_semantic_pairs(embeddings, duplicate_pairs),
@@ -52,9 +52,10 @@ def scan_folder(folder_path, test_folder_path=None):
         except OSError as e:
             unreadable_images.append((test_folder_path, str(e)))
             test_paths = []
-        result["leaked_pairs"] = find_leaked_pairs(readable_paths, test_paths)
-        result["similar_leaks"] = find_semantic_leaks(
-            embeddings, compute_embeddings(test_paths), result["leaked_pairs"])
+        test_embeddings = compute_embeddings(test_paths)
+        result["leaked_pairs"] = confirm_hash_pairs(
+            find_leaked_pairs(readable_paths, test_paths), {**embeddings, **test_embeddings})
+        result["similar_leaks"] = find_semantic_leaks(embeddings, test_embeddings, result["leaked_pairs"])
 
     return result
 

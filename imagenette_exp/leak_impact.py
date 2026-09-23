@@ -14,7 +14,7 @@ import numpy as np
 
 sys.path.insert(0, "/app")
 from duplicates import find_leaked_pairs
-from semantic import compute_embeddings, find_semantic_leaks
+from semantic import compute_embeddings, confirm_hash_pairs, find_semantic_leaks
 
 random.seed(0)
 ROOT = "/data/imagenette2-160"
@@ -69,8 +69,9 @@ with tempfile.TemporaryDirectory() as tmp:
         contaminated.append((out, label))
 
     train_paths, test_paths = [p for p, _ in contaminated], [p for p, _ in test]
-    hash_leaks = find_leaked_pairs(train_paths, test_paths)
-    emb_leaks = find_semantic_leaks(compute_embeddings(train_paths), compute_embeddings(test_paths), hash_leaks)
+    train_emb, test_emb = compute_embeddings(train_paths), compute_embeddings(test_paths)
+    hash_leaks = confirm_hash_pairs(find_leaked_pairs(train_paths, test_paths), {**train_emb, **test_emb})
+    emb_leaks = find_semantic_leaks(train_emb, test_emb, hash_leaks)
     by_hash = {a for a, _, _ in hash_leaks}
     flagged = by_hash | {pair[0] for pair in emb_leaks}
 

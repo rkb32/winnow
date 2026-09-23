@@ -97,6 +97,23 @@ def _verified_pairs(left, right, skip, same_set):
     return pairs
 
 
+# Perceptual hashes collide on low-texture photos (products on white, silhouettes on sky): across
+# Imagenette's 37M train/val pairs, all 13 raw hash matches were different photos, with at most
+# 6 shared keypoints and similarity at most 0.80. Real copies caught by the hash shared 9+ keypoints
+# or looked near-identical to the embedder (imagenette_exp/full_audit.py and README).
+HASH_CONFIRM_INLIERS = 8
+HASH_CONFIRM_SIMILARITY = 0.85
+
+
+def confirm_hash_pairs(pairs, embeddings):
+    confirmed = []
+    for a, b, distance in pairs:
+        similar = a in embeddings and b in embeddings and float(embeddings[a] @ embeddings[b]) >= HASH_CONFIRM_SIMILARITY
+        if similar or keypoint_inliers(a, b) >= HASH_CONFIRM_INLIERS:
+            confirmed.append((a, b, distance))
+    return confirmed
+
+
 def find_semantic_pairs(embeddings, already_found):
     skip = {frozenset(p[:2]) for p in already_found}
     return _verified_pairs(embeddings, embeddings, skip, same_set=True)
