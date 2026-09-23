@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Winnow: OpenCV AI Competition 2026 Proposal</title>
+<style>
+  @page { size: letter; margin: 0.7in 0.75in; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 10.2pt;
+    line-height: 1.45;
+    color: #16181d;
+    margin: 0;
+  }
+  h1 {
+    font-size: 17pt;
+    line-height: 1.25;
+    margin: 0 0 2pt 0;
+    letter-spacing: -0.2pt;
+  }
+  .subtitle {
+    font-size: 11.5pt;
+    color: #3d4450;
+    margin: 0 0 4pt 0;
+  }
+  .rule { border: 0; border-top: 1.5pt solid #16181d; margin: 8pt 0 14pt 0; }
+  h2 {
+    font-size: 12.4pt;
+    margin: 17pt 0 6pt 0;
+    padding-bottom: 3pt;
+    border-bottom: 0.6pt solid #b9bec7;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 7pt 0; }
+  ul { margin: 0 0 7pt 0; padding-left: 16pt; }
+  li { margin: 0 0 4.5pt 0; }
+  strong { font-weight: 700; }
+  em { font-style: italic; }
+  code {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 8.8pt;
+    background: #f0f1f4;
+    padding: 0.5pt 2pt;
+    border-radius: 2pt;
+  }
+  pre {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 7pt;
+    line-height: 1.18;
+    white-space: pre;
+    margin: 8pt 0 10pt 0;
+    padding: 9pt 10pt;
+    border: 0.6pt solid #c4c9d1;
+    background: #fafbfc;
+    page-break-inside: avoid;
+    overflow: visible;
+  }
+  .kv { margin: 0 0 3pt 0; }
+  .tight { margin-bottom: 3pt; }
+</style>
+</head>
+<body>
+
+<h1>OpenCV AI Competition 2026 Proposal</h1>
+<p class="subtitle"><strong>Winnow:</strong> a data quality auditor for computer vision training sets</p>
+<hr class="rule">
+
+<h2>1. Team</h2>
+<p class="kv"><strong>Team name:</strong> Winnow Dev</p>
+<p class="kv"><strong>Members:</strong> Solo entrant.</p>
+<p><strong>Bio:</strong> Ranjeeth Burujula, Saint Louis, Missouri, United States. Undergraduate computer science student (BCA, distance program), graduating December 2026. I work primarily in Python and am currently working through data structures and algorithms. I picked a problem whose deliverable is measured evidence instead of a demo, because being accountable for the numbers is how I learn a system properly. Thank you for the opportunity to build it.</p>
+<p><strong>Hackathon experience:</strong> First entry. Scoped accordingly: Section 7 commits to a minimum viable set and a feature freeze two weeks before the deadline, so evidence and documentation are produced with time remaining.</p>
+
+<h2>2. Problem and impact</h2>
+<p>Vision teams invest in models, GPUs and labeling, and almost nothing in verifying the data underneath. Published audits found that 3.3% of CIFAR-10 test images and 10% of CIFAR-100 test images have duplicates in their own training sets (Barz &amp; Denzler, <em>Do We Train on Test Data? Purging CIFAR of Near-Duplicates</em>, Journal of Imaging 2020, arXiv:1902.00423), and an average of at least 3.3% label errors across ten heavily used benchmark test sets, rising to at least 6% of the ImageNet validation set (Northcutt et al., <em>Pervasive Label Errors in Test Sets Destabilize Machine Learning Benchmarks</em>, NeurIPS 2021, arXiv:2103.14749). Internal commercial datasets are worse.</p>
+<p>Leakage is the expensive defect because its symptom is good news. The model is graded on memorized material, the number is fiction, and the failure surfaces in production. No model work recovers from an evaluation set that lies.</p>
+<p><strong>Winnow audits a dataset in place and returns the specific files causing damage, ranked by severity.</strong> Severity is a stated policy, not an inferred quantity: test-split leakage outranks annotation errors, which outrank train duplicates, which outrank quality defects. That ordering is calibrated once by the dose-response study in Section 6.</p>
+<p><strong>Privacy property.</strong> Winnow never stores customer pixels. Images are read in place through a scoped, revocable, read-only cross-account role. Each image yields a small metrics row and the pixels are discarded. Dashboard thumbnails render from presigned URLs against the customer's own bucket, so bytes travel from the customer to the customer's browser and never through Winnow. This makes it deployable by teams who cannot export imagery.</p>
+
+<h2>3. OpenCV 5 analysis</h2>
+<p class="tight"><strong>Per-image (parallel):</strong></p>
+<ul>
+  <li><strong>Decode integrity.</strong> <code>imdecode</code> on the byte stream; truncated files flagged, not fatal.</li>
+  <li><strong>EXIF orientation conflict.</strong> Decoded twice, once with <code>IMREAD_IGNORE_ORIENTATION</code>, because OpenCV applies the tag automatically and would otherwise mask the defect. The raw tag is compared against decoded dimensions and against the annotation coordinate space. A mismatch invalidates every box on that image, and stays invisible to spot-checking because labeling tools honor the tag while most training loaders do not.</li>
+  <li><strong>Blur.</strong> Laplacian variance, cross-checked against Sobel gradient energy, computed tile-wise so partial defocus is not averaged away.</li>
+  <li><strong>Exposure.</strong> Histogram clipping fraction, entropy, dynamic range.</li>
+  <li><strong>Screen photographs.</strong> DFT magnitude spectrum with radial and angular energy profiling to catch display moiré.</li>
+  <li><strong>Annotation plausibility.</strong> Geometry first: out-of-bounds, degenerate area, implausible aspect ratio. Then content, framed as class-conditional outlier detection instead of emptiness. Edge density, Laplacian variance and colour moments inside each box are compared against that class's distribution. Asking whether a box is empty misfires on sky, snow, water and small distant objects. Asking whether a box is unlike others of its class yields a calibrated review queue.</li>
+</ul>
+<p class="tight"><strong>Pairwise (duplicates and leakage):</strong></p>
+<ul>
+  <li><strong>Fingerprints.</strong> <code>img_hash</code>: 256-bit block-mean as primary, with pHash and colour-moment hashes as complementary signals.</li>
+  <li><strong>Candidate generation.</strong> O(n²) is five billion comparisons at 100k images and does not finish. The hash is split into bands, each indexed separately, and two images become candidates only if they collide in at least one band. Band count derives from the target Hamming radius rather than guesswork: <em>b</em> bands guarantee recall within radius <em>b</em>−1, which is why the fingerprint is 256 bits, enough bands to cover a realistic near-duplicate radius. Runtime is approximately linear.</li>
+  <li><strong>Cascaded verification.</strong> Full-hash Hamming distance, then dimension and aspect agreement, then ORB with RANSAC homography on the survivors only. ORB costs tens of milliseconds per pair, so an uncascaded candidate net turns into hours. Descriptors are computed once during the scan pass and stored compactly; they are derived features, not pixels, so the privacy property holds. Verification separates true duplicates, including crops, rescales and watermarked re-uploads, from hash collisions.</li>
+  <li><strong>Leakage.</strong> Fingerprints carry split membership, so leakage is a duplicate cluster spanning train and test. Same computation, separate report, highest consequence.</li>
+</ul>
+<p><strong>Scope control.</strong> Only annotation checks need labels. Label ingestion is optional and isolated behind two adapters, COCO JSON and YOLO text, normalizing into one internal schema. Other formats are out of scope. If ingestion slips, the highest-value findings still ship.</p>
+
+<h2>4. AWS architecture</h2>
+<ul>
+  <li><strong>Onboarding.</strong> The customer creates a read-only cross-account role scoped to one bucket prefix, trusting Winnow's account ID and gated by an external ID, assumed via STS. They revoke it unilaterally and see every access in their own CloudTrail. Demonstrated across two separate AWS accounts.</li>
+  <li><strong>Control plane.</strong> API Gateway with Lambda handlers; job state in DynamoDB.</li>
+  <li><strong>Fan-out.</strong> A lister shards keys into batches of roughly 2,000 images onto SQS. Batches are large by design: Fargate does not cache container images between tasks, so the OpenCV pull has to be amortized across substantial work.</li>
+  <li><strong>Scan workers (COOL path).</strong> The OpenCV 5 container runs on ECS Fargate ARM64 / Graviton, scaling on queue depth. The work is CPU-bound, memory-light and embarrassingly parallel, which is the Graviton profile. A headless multi-stage build keeps the image small.</li>
+  <li><strong>Fault isolation.</strong> Two retries, then a dead-letter queue, with those images reported as undecodable. One corrupt file degrades a batch, never a scan.</li>
+  <li><strong>Results.</strong> Per-image metric rows, no pixels, written to S3 as Parquet partitioned by scan.</li>
+  <li><strong>Reduce stage, single-task by design.</strong> 100k images produce about 3 MB of fingerprints, and 10M still fit in one container's memory. A distributed index was considered and rejected on arithmetic: it adds cost, failure modes and hot-partition risk for no benefit. The scale-out path is documented for when it is actually needed.</li>
+  <li><strong>Agent (Agentic Vision path).</strong> Bedrock. <em>Perceive:</em> aggregate defect statistics and cluster structure, metrics only, never imagery. <em>Decide:</em> which clusters materially threaten accuracy, remediation order, auto-quarantine versus human review, and whether a shard warrants a deeper second pass. <em>Act:</em> ranked plan, quarantine manifest of object keys, targeted re-scan trigger. A constrained tool interface (<code>query_metrics</code>, <code>sample_cluster</code>, <code>request_deep_scan</code>, <code>emit_manifest</code>) keeps actions enumerable and logged, and every recommendation cites its evidence rows. The model is pinned, temperature is 0, and prompts and responses are logged to S3 so a published result replays. A deterministic rule-based ranking sits underneath as both fallback and measured baseline.</li>
+  <li><strong>Presentation.</strong> React dashboard on S3 behind CloudFront, public URL, preloaded scan. No account, no setup.</li>
+  <li><strong>Reproducibility.</strong> AWS CDK, locked Python dependencies, container pinned by digest, seeded corruption, so every published number regenerates.</li>
+</ul>
+
+<h2>5. Architecture</h2>
+<pre>
+Customer AWS account                    Winnow AWS account
+┌──────────────────────┐
+│  S3: image dataset   │
+│  IAM role (read-only,│◄──── STS AssumeRole (external ID, expiring creds)
+│  external ID)        │                    │
+└──────────────────────┘                    │
+    ▲        ▲                              │
+    │        │ read in place,       ┌───────┴────────┐
+    │        │ pixels discarded     │  API Gateway   │
+    │        │                      │  + Lambda      │──► DynamoDB (job state)
+    │        │                      └───────┬────────┘
+    │        │                              │
+    │        │                      ┌───────▼────────┐
+    │        │                      │  Lister →  SQS │──► DLQ (poison batches)
+    │        │                      └───────┬────────┘
+    │        │                              │
+    │        │      ┌───────────────────────▼─────────────────┐
+    │        └──────┤  ECS Fargate: ARM64 / Graviton          │
+    │               │  OpenCV 5 detectors + fingerprinting    │  ◄── COOL path
+    │               └───────────────────────┬─────────────────┘
+    │                                       │ metric rows (no pixels)
+    │                            ┌──────────▼──────────┐
+    │                            │  S3 (Parquet)       │
+    │                            └──────────┬──────────┘
+    │                                       │
+    │                     ┌─────────────────▼──────────────────┐
+    │                     │ Single reduce task:                │
+    │                     │ band index → candidates →          │
+    │                     │ cascaded ORB/RANSAC verification   │
+    │                     │ → duplicate &amp; leakage clusters     │
+    │                     └─────────────────┬──────────────────┘
+    │                                       │
+    │                     ┌─────────────────▼──────────────────┐
+    │                     │ Bedrock agent (metrics only)       │  ◄── Agentic
+    │                     │ perceive → decide → act            │      path
+    │                     │ ranked plan, quarantine manifest,  │
+    │                     │ re-scan trigger                    │
+    │                     └─────────────────┬──────────────────┘
+    │                                       │
+    │                     ┌─────────────────▼──────────────────┐
+    │                     │ CloudFront + S3 dashboard          │
+    └─────────────────────┤ (thumbnails via presigned URLs     │
+      browser fetches     │  straight from customer bucket)    │
+      images directly     └────────────────────────────────────┘
+</pre>
+
+<h2>6. Users and evaluation</h2>
+<p><strong>Users.</strong> ML platform and data engineers training vision models on proprietary imagery: insurtech, medical imaging, retail catalog, agritech, industrial inspection, autonomous systems. Secondarily, labs and dataset publishers certifying a release. The motivation is narrow, which is knowing whether the accuracy number about to be presented is real.</p>
+<p><strong>Detector correctness.</strong> A seeded harness injects a known manifest into clean public data, using Pascal VOC and a COCO subset for annotations and Imagenette for training runs. Injected defects are duplicates, cross-split copies, graduated blur, conflicting EXIF orientation (added, not stripped, since public datasets arrive normalized), displaced annotations and simulated screen photographs. Ground truth is authored, so per-defect precision, recall and F1, plus duplicate cluster purity, are directly computable.</p>
+<p><strong>Index correctness.</strong> The band index is an optimization and has to be shown not to lose results. On a 10,000-image subset the exhaustive O(n²) comparison is run once and the fast path's recall is measured against it.</p>
+<p><strong>Two accuracy claims, tested separately.</strong> They differ in magnitude, so conflating them weakens both.</p>
+<ul>
+  <li><em>Leakage corrupts evaluation.</em> One model, scored on the contaminated test set and on the decontaminated one. The gap is the size of the lie. Large, unambiguous, no retraining involved.</li>
+  <li><em>Cleaning improves training.</em> An identical model trained three ways: on dirty data, on data with the same file count removed at random, and on Winnow-cleaned data, all scored on a verified-clean holdout. The random-removal arm is the control that matters, showing the gain comes from removing the correct files and not merely from removing files. The effect is small enough to be confused with seed variance, so every arm runs five seeds and reports mean ± sd, alongside a dose-response curve of accuracy against corruption rate. A trend beats a single before-and-after pair.</li>
+</ul>
+<p><strong>Real-world validation.</strong> Winnow runs against unmodified public datasets, and its duplicate and leakage findings are compared against independently published audits of those same datasets.</p>
+<p><strong>Systems metrics.</strong> Images per second per vCPU, wall-clock at 10k / 50k / 100k, USD per 10k images, band index versus O(n²) candidate-generation time, and Graviton versus x86 under identical build configuration with at least five repetitions at p50 and p95. OpenCV's x86 vector paths are more mature than its ARM ones, so a raw-throughput deficit alongside a price-performance win is the expected and honestly reported result.</p>
+<p><strong>Agent evaluation.</strong> The agent is measured against the deterministic ranking, not against nothing: accuracy recovered from its top 200 recommendations versus the rule-based top 200 versus 200 random flags. A null result is reported as one.</p>
+<p><strong>Documented failure cases.</strong> Augmentation misread as duplication, legitimate burst photography, datasets where blur is a feature, small-object and uniform-texture annotations flagged as class outliers, screenshot datasets where screen artifacts are the intended content, and synthetic imagery.</p>
+<p><strong>Judge demo.</strong> Public URL, no signup, scan already complete on arrival: clusters with thumbnails, leakage surfaced first, the agent's plan with citations, and both accuracy charts. One click runs a live scan on a smaller set, end to end, inside five minutes.</p>
+
+<h2>7. Scope, sequencing, risk</h2>
+<p><strong>Week one is a dependency spike, before application code.</strong> <code>img_hash</code> lives in <code>opencv_contrib</code>, and the target is OpenCV 5 on ARM64, so a prebuilt distribution for that combination is not assumed. The first task is proving that OpenCV 5 with contrib builds and runs in an ARM64 Fargate container, with a Docker source build as the fallback. This is the one dependency capable of disrupting the schedule, so it gets resolved while there is time to react.</p>
+<p><strong>Committed (MVP).</strong> Near-duplicate detection, cross-split leakage, blur, EXIF conflict, the single-task reduce stage, Graviton workers, the public dashboard, and the leakage-corrupts-evaluation experiment. None of it requires label ingestion.</p>
+<p><strong>Declared upside, not commitments.</strong> Annotation outlier detection, moiré, exposure, the full dose-response study, agent-versus-baseline evaluation, and the price-performance benchmark.</p>
+<p><strong>Feature freeze 12 October,</strong> leaving two weeks for evaluation runs, the report, failure-case documentation and the video. Evidence is a scored deliverable, and treating it as leftover time is the common way a strong build loses.</p>
+
+<h2>8. Use of the compute grant</h2>
+<p>For most entries compute runs the demo. Here compute is the result, because every claim in Section 6 is a measurement that has to be paid for.</p>
+<p>The dose-response study is four corruption rates across three arms at five seeds each, so sixty training runs, and the seeds exist because one run cannot be distinguished from noise. The scale study means full scans at 10k, 50k and 100k, repeated for stable timings. The price-performance benchmark means running the identical workload on x86 as well as Graviton, at least five repetitions each, which is money spent on the architecture that will not ship so the comparison is measured instead of asserted.</p>
+<p>Judging runs 27 October to 9 November. The endpoint has to stay up across that window and absorb scans judges trigger themselves. Entries frequently go dark before they are judged.</p>
+<p>I am a solo undergraduate entrant with no institutional or employer cloud budget. The architecture is cost-disciplined by design, with read-in-place access, no data duplication, no NAT gateway, tasks instead of always-on services, and one reduce stage instead of a managed index, so a routine scan is cheap. The expense concentrates entirely in repeated, statistically meaningful measurement.</p>
+<p><strong>With the grant:</strong> the full experimental matrix at the 100k ceiling, five seeds per arm, the complete Graviton and x86 comparison, and an endpoint live throughout judging. <strong>Without it:</strong> the ceiling drops to roughly 10k, seeds drop to two, the x86 arm is cut, and the endpoint goes live only in short windows. The project ships either way. The grant determines how strong the evidence behind it is.</p>
+<p>I am available for the required 21 September to 2 October check-in, and will bring measured interim results instead of a status update.</p>
+
+<h2>9. Featured path</h2>
+<p><strong>Both.</strong></p>
+<p><strong>COOL.</strong> The per-image OpenCV 5 workload, which is the computational core, runs on Graviton via ARM64 Fargate, with a controlled price-performance benchmark against x86 in the final submission.</p>
+<p><strong>Agentic Vision.</strong> The Bedrock agent closes a real perceive, decide, act loop over computed visual evidence. It decides which defects threaten accuracy and in what order, then acts through quarantine manifests and targeted re-scans behind a constrained, auditable tool interface, with its value measured against a deterministic baseline instead of asserted.</p>
+
+</body>
+</html>

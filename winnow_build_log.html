@@ -1,0 +1,201 @@
+<title>Winnow Build Log</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#F1F4F2; --surface:#FFFFFF; --surface-2:#E7ECE9;
+    --ink:#10151A; --ink-soft:#55625C; --line:#DCE3DE;
+    --accent:#0E7C6B; --accent-soft:#E3F3EF;
+    --decision:#B85C10; --decision-soft:#FBEBDD;
+    --pending:#8B9490; --pending-soft:#EDEFEC;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0C1210; --surface:#131A17; --surface-2:#1B2420;
+      --ink:#E8EFEC; --ink-soft:#92A29B; --line:#253029;
+      --accent:#2ED1AF; --accent-soft:#12332C;
+      --decision:#F0904A; --decision-soft:#3A2415;
+      --pending:#5E6864; --pending-soft:#1B211E;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0C1210; --surface:#131A17; --surface-2:#1B2420;
+    --ink:#E8EFEC; --ink-soft:#92A29B; --line:#253029;
+    --accent:#2ED1AF; --accent-soft:#12332C;
+    --decision:#F0904A; --decision-soft:#3A2415;
+    --pending:#5E6864; --pending-soft:#1B211E;
+  }
+
+  body{ background:var(--bg); color:var(--ink); font-family:var(--sans);
+        padding-inline:20px; padding-block:40px 64px; }
+  .wrap{ max-width:760px; margin-inline:auto; }
+
+  .eyebrow{ font-family:var(--mono); font-size:12px; letter-spacing:.08em;
+            text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
+  h1{ font-size:clamp(28px,5vw,38px); line-height:1.1; margin:0 0 12px;
+      text-wrap:balance; letter-spacing:-0.01em; }
+  .mission{ font-size:16px; line-height:1.55; color:var(--ink-soft); max-width:58ch;
+             margin:0 0 6px; }
+  .meta{ font-family:var(--mono); font-size:12.5px; color:var(--ink-soft);
+         margin:18px 0 0; }
+
+  hr.rule{ border:0; border-top:1px solid var(--line); margin:28px 0; }
+
+  /* progress rail */
+  .rail{ display:flex; flex-wrap:wrap; gap:8px 6px; margin:22px 0 0; padding:0; list-style:none; }
+  .step{ display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:12px;
+         padding:7px 11px; border-radius:100px; border:1px solid var(--line); background:var(--surface); white-space:nowrap; }
+  .step .dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+  .step.done{ color:var(--ink); }
+  .step.done .dot{ background:var(--accent); }
+  .step.now{ color:var(--decision); border-color:var(--decision); background:var(--decision-soft); font-weight:600; }
+  .step.now .dot{ background:var(--decision); }
+  .step.todo{ color:var(--pending); }
+  .step.todo .dot{ background:var(--pending); }
+
+  h2{ font-size:13px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.08em;
+      color:var(--ink-soft); margin:0 0 14px; }
+
+  /* detector cards */
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:620px){ .grid{ grid-template-columns:1fr; } }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px;
+         padding:18px 18px 16px; display:flex; flex-direction:column; gap:10px; }
+  .card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .card h3{ font-size:16px; margin:0; }
+  .badge{ font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.03em;
+          padding:3px 9px; border-radius:100px; white-space:nowrap; }
+  .badge.pass{ background:var(--accent-soft); color:var(--accent); }
+  .what{ font-size:13.5px; line-height:1.5; color:var(--ink-soft); margin:0; }
+  .method{ font-family:var(--mono); font-size:11.5px; color:var(--ink-soft);
+           background:var(--surface-2); border-radius:8px; padding:8px 10px; line-height:1.5; }
+
+  .readout{ display:flex; gap:14px; flex-wrap:wrap; margin-top:2px; }
+  .readout div{ font-family:var(--mono); font-size:11px; color:var(--ink-soft); }
+  .readout .val{ display:block; font-size:17px; font-weight:600; color:var(--ink);
+                 font-variant-numeric:tabular-nums; }
+
+  .decision{ background:var(--decision-soft); border:1px solid color-mix(in srgb, var(--decision) 35%, transparent);
+             border-radius:10px; padding:10px 12px; font-size:12.5px; line-height:1.5; color:var(--ink); }
+  .decision b{ color:var(--decision); font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; }
+
+  /* aws + remaining panels */
+  .panel{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px; }
+  .row{ display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .row:last-child{ border-bottom:0; }
+  .row .dot{ width:9px; height:9px; border-radius:50%; margin-top:5px; flex:none; }
+  .row.done .dot{ background:var(--accent); }
+  .row.now .dot{ background:var(--decision); }
+  .row.todo .dot{ background:var(--pending); }
+  .row-body b{ display:block; font-size:14px; margin-bottom:2px; }
+  .row-body span{ font-size:13px; color:var(--ink-soft); line-height:1.5; }
+
+  .todo-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width:620px){ .todo-grid{ grid-template-columns:1fr; } }
+  .todo-item{ background:var(--pending-soft); border-radius:10px; padding:12px 14px; }
+  .todo-item b{ display:block; font-size:13.5px; color:var(--ink); margin-bottom:3px; }
+  .todo-item span{ font-size:12.5px; color:var(--ink-soft); }
+
+  footer{ margin-top:32px; font-family:var(--mono); font-size:12px; color:var(--ink-soft);
+          display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Winnow · OpenCV AI Competition 2026</p>
+  <h1>Build Log</h1>
+  <p class="mission">A data-quality auditor for computer vision datasets. Points it at a folder of training images and it finds the files quietly wrecking a model: duplicates, photos leaked between the training and test split, blurry shots, and rotation-tag bugs that silently invalidate bounding boxes.</p>
+  <p class="meta">Solo build · Ranjeeth Burujula · Team: Winnow Dev</p>
+
+  <ul class="rail">
+    <li class="step done"><span class="dot"></span>Proposal submitted</li>
+    <li class="step done"><span class="dot"></span>$150 grant awarded</li>
+    <li class="step done"><span class="dot"></span>ARM64 + OpenCV 5 spike passed</li>
+    <li class="step done"><span class="dot"></span>4 local detectors validated</li>
+    <li class="step done"><span class="dot"></span>AWS account created</li>
+    <li class="step now"><span class="dot"></span>Billing budget — in progress</li>
+    <li class="step todo"><span class="dot"></span>IAM access key</li>
+    <li class="step todo"><span class="dot"></span>Cloud deployment</li>
+    <li class="step todo"><span class="dot"></span>Dashboard</li>
+    <li class="step todo"><span class="dot"></span>Leakage experiment</li>
+  </ul>
+
+  <hr class="rule">
+
+  <h2>What's built and validated</h2>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-top"><h3>Duplicate detector</h3><span class="badge pass">Validated ✓</span></div>
+      <p class="what">Flags near-identical photos so the same shot doesn't get counted twice in a training set.</p>
+      <div class="method">256-bit perceptual hash (OpenCV BlockMeanHash) → Hamming distance between two images</div>
+      <div class="readout">
+        <div>Same image, tiny noise<span class="val">0.0</span></div>
+        <div>Two different images<span class="val">17.0</span></div>
+      </div>
+      <div class="decision"><b>Threshold set</b><br>≤ 5 → duplicate. Picked under time pressure once real numbers were in hand — biased low on purpose, since missing a real duplicate costs more than an occasional false flag. Provisional: recalibrate against real photos before final submission.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><h3>Leakage detector</h3><span class="badge pass">Validated ✓</span></div>
+      <p class="what">Same check as duplicates, run between the training pile and the test pile — catches the same photo appearing in both, which fakes a model's accuracy score.</p>
+      <div class="method">Reuses the duplicate hash + threshold, applied across two groups instead of within one</div>
+      <div class="readout">
+        <div>Train image vs. its test-side twin<span class="val">0.0</span></div>
+        <div>Train image vs. unrelated test image<span class="val">17.0</span></div>
+      </div>
+      <div class="decision"><b>No new decision</b><br>Inherits the duplicate threshold above — this is the highest-consequence defect in the whole project, since a leaked test image makes a bad model look accurate.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><h3>Blur detector</h3><span class="badge pass">Validated ✓</span></div>
+      <p class="what">Flags photos too out-of-focus for a human, or a model, to learn anything real from.</p>
+      <div class="method">Laplacian variance — sharp edges score high, smooth blur scores low</div>
+      <div class="readout">
+        <div>Sharp test pattern<span class="val">37,614</span></div>
+        <div>Same pattern, blurred<span class="val">13.2</span></div>
+      </div>
+      <div class="decision"><b>Threshold set</b><br>≤ 200 → too blurry. Same low-bias reasoning as the duplicate call. Provisional until run against real photos.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-top"><h3>EXIF orientation</h3><span class="badge pass">Validated ✓</span></div>
+      <p class="what">Catches photos whose hidden "rotate me" tag doesn't match the raw pixels — the exact bug that silently misplaces every bounding box on a sideways phone photo.</p>
+      <div class="method">Reads the raw EXIF Orientation tag (Pillow), flags anything but the identity value</div>
+      <div class="readout">
+        <div>No rotation tag<span class="val">safe</span></div>
+        <div>Tag = 6 (90° rotate)<span class="val">flagged</span></div>
+      </div>
+      <div class="decision"><b>No threshold needed</b><br>Categorical, not a tunable number — any non-identity tag is flagged as at-risk.</div>
+    </div>
+
+  </div>
+
+  <hr class="rule">
+
+  <h2>Where things stand on AWS right now</h2>
+  <div class="panel">
+    <div class="row done"><span class="dot"></span><div class="row-body"><b>Account created</b><span>Free-tier signup complete, Basic (free) support plan selected.</span></div></div>
+    <div class="row now"><span class="dot"></span><div class="row-body"><b>Billing budget — in progress</b><span>Setting a $10/month alert so nothing spends unnoticed. A stricter $0 "zero-spend" option exists too, but it fires on totally normal project costs and trains you to ignore it.</span></div></div>
+    <div class="row todo"><span class="dot"></span><div class="row-body"><b>IAM access key</b><span>A scoped user for this machine to talk to AWS with — created and typed in by you directly, never through Claude.</span></div></div>
+  </div>
+
+  <hr class="rule">
+
+  <h2>Not started yet</h2>
+  <div class="todo-grid">
+    <div class="todo-item"><b>Cloud deployment</b><span>S3, Lambda, SQS, Fargate on Graviton — the pipeline from the proposal.</span></div>
+    <div class="todo-item"><b>Results dashboard</b><span>The page a judge opens with no setup.</span></div>
+    <div class="todo-item"><b>Leakage experiment</b><span>Train on dirty vs. cleaned data, show the accuracy gap, on Imagenette.</span></div>
+    <div class="todo-item"><b>Report + 5-min video</b><span>Required submission deliverables.</span></div>
+  </div>
+
+  <footer>
+    <span>Feature freeze: Oct 12</span>
+    <span>Final submission: Oct 26, 11:59pm PT</span>
+  </footer>
+
+</div>

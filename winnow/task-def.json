@@ -1,0 +1,34 @@
+{
+  "family": "winnow-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::073868306412:role/winnowTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::073868306412:role/winnowTaskRole",
+  "runtimePlatform": {
+    "cpuArchitecture": "ARM64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "winnow",
+      "image": "073868306412.dkr.ecr.us-east-1.amazonaws.com/winnow:arm64",
+      "essential": true,
+      "command": ["python3", "s3_scan.py"],
+      "environment": [
+        { "name": "WINNOW_BUCKET", "value": "winnow-test-073868306412" },
+        { "name": "WINNOW_PREFIX", "value": "samples/" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/winnow",
+          "awslogs-region": "us-east-1",
+          "awslogs-create-group": "true",
+          "awslogs-stream-prefix": "winnow"
+        }
+      }
+    }
+  ]
+}
