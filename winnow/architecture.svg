@@ -1,0 +1,111 @@
+<svg viewBox="0 0 1300 920" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4b5563"/>
+    </marker>
+  </defs>
+
+  <rect width="1300" height="920" fill="#ffffff"/>
+
+  <text x="650" y="36" text-anchor="middle" font-size="24" font-weight="700" fill="#111827">Winnow — Architecture</text>
+
+  <!-- ===================== LEFT PATH: bulk S3 scan ===================== -->
+  <text x="230" y="75" text-anchor="middle" font-size="15" font-weight="700" fill="#1d4ed8">Path A — bulk scan (you have AWS access)</text>
+
+  <rect x="90" y="95" width="280" height="70" rx="10" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.5"/>
+  <text x="230" y="122" text-anchor="middle" font-size="13" fill="#111827">S3 bucket: samples/</text>
+  <text x="230" y="141" text-anchor="middle" font-size="11.5" fill="#374151">upload photos, then an empty samples/_ready marker</text>
+
+  <line x1="230" y1="165" x2="230" y2="205" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="90" y="205" width="280" height="65" rx="10" fill="#eff6ff" stroke="#1d4ed8" stroke-width="1.5"/>
+  <text x="230" y="230" text-anchor="middle" font-size="13" fill="#111827">EventBridge rule</text>
+  <text x="230" y="249" text-anchor="middle" font-size="11.5" fill="#374151">watches samples/* only, not results/* (avoids a trigger loop)</text>
+
+  <!-- ===================== RIGHT PATH: public website ===================== -->
+  <text x="1010" y="75" text-anchor="middle" font-size="15" font-weight="700" fill="#047857">Path B — public website (anyone, no AWS account)</text>
+
+  <rect x="870" y="95" width="280" height="55" rx="10" fill="#ecfdf5" stroke="#047857" stroke-width="1.5"/>
+  <text x="1010" y="128" text-anchor="middle" font-size="13" fill="#111827">Visitor picks photos on the site</text>
+
+  <line x1="1010" y1="150" x2="1010" y2="190" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="870" y="190" width="280" height="70" rx="10" fill="#ecfdf5" stroke="#047857" stroke-width="1.5"/>
+  <text x="1010" y="214" text-anchor="middle" font-size="13" fill="#111827">Lambda Function URL (app.py)</text>
+  <text x="1010" y="233" text-anchor="middle" font-size="11" fill="#374151">/upload-urls → presigned S3 POSTs</text>
+  <text x="1010" y="249" text-anchor="middle" font-size="11" fill="#374151">JPEG/PNG only, ≤5MB, ≤20 files</text>
+
+  <line x1="1010" y1="260" x2="1010" y2="300" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="870" y="300" width="280" height="65" rx="10" fill="#ecfdf5" stroke="#047857" stroke-width="1.5"/>
+  <text x="1010" y="325" text-anchor="middle" font-size="13" fill="#111827">Browser uploads straight to S3</text>
+  <text x="1010" y="344" text-anchor="middle" font-size="11.5" fill="#374151">uploads/&lt;session&gt;/images|test/ — credentials never touch the browser</text>
+
+  <line x1="1010" y1="365" x2="1010" y2="405" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="870" y="405" width="280" height="80" rx="10" fill="#ecfdf5" stroke="#047857" stroke-width="1.5"/>
+  <text x="1010" y="428" text-anchor="middle" font-size="13" fill="#111827">Lambda: /scan</text>
+  <text x="1010" y="446" text-anchor="middle" font-size="11" fill="#374151">checks daily cap (15/day) + concurrency (3 running)</text>
+  <text x="1010" y="462" text-anchor="middle" font-size="11" fill="#374151">then ecs:RunTask with WINNOW_SESSION set</text>
+
+  <!-- ===================== CONVERGENCE ARROWS to Fargate ===================== -->
+  <line x1="230" y1="270" x2="230" y2="315" stroke="#4b5563" stroke-width="1.5"/>
+  <line x1="230" y1="315" x2="560" y2="315" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="1010" y1="485" x2="1010" y2="530" stroke="#4b5563" stroke-width="1.5"/>
+  <line x1="1010" y1="530" x2="880" y2="530" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ===================== SHARED CORE: Fargate task ===================== -->
+  <rect x="450" y="320" width="400" height="260" rx="14" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+  <text x="650" y="348" text-anchor="middle" font-size="15" font-weight="700" fill="#92400e">ECS Fargate task (ARM64 / Graviton)</text>
+
+  <rect x="475" y="362" width="350" height="55" rx="8" fill="#fffbeb" stroke="#b45309" stroke-width="1"/>
+  <text x="650" y="382" text-anchor="middle" font-size="12.5" fill="#111827">scan.py — detectors</text>
+  <text x="650" y="399" text-anchor="middle" font-size="10.5" fill="#374151">hash dup/leak · OpenCV5 dnn embeddings + SIFT/RANSAC edited-copy check · blur · EXIF</text>
+
+  <line x1="650" y1="417" x2="650" y2="435" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="475" y="435" width="350" height="55" rx="8" fill="#fffbeb" stroke="#b45309" stroke-width="1"/>
+  <text x="650" y="455" text-anchor="middle" font-size="12.5" fill="#111827">agent.py — Claude (Haiku 4.5, Bedrock)</text>
+  <text x="650" y="472" text-anchor="middle" font-size="10.5" fill="#374151">forced tool call → decide keep / quarantine per finding</text>
+
+  <line x1="650" y1="490" x2="650" y2="508" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="475" y="508" width="350" height="52" rx="8" fill="#fffbeb" stroke="#b45309" stroke-width="1"/>
+  <text x="650" y="530" text-anchor="middle" font-size="12.5" fill="#111827">flagged images copied to quarantine/</text>
+  <text x="650" y="547" text-anchor="middle" font-size="10.5" fill="#374151">same bucket, human Keep/Remove override on the site</text>
+
+  <!-- ===================== OUTPUT: results in S3 ===================== -->
+  <line x1="650" y1="580" x2="650" y2="620" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="470" y="620" width="360" height="70" rx="10" fill="#f3f4f6" stroke="#374151" stroke-width="1.5"/>
+  <text x="650" y="645" text-anchor="middle" font-size="13" fill="#111827">Results written to S3</text>
+  <text x="650" y="664" text-anchor="middle" font-size="11" fill="#374151">results/latest.json (bulk)  ·  results/sessions/&lt;id&gt;.json (website)</text>
+  <text x="650" y="679" text-anchor="middle" font-size="10" fill="#6b7280">uploads auto-delete after 1 day, reports after 7</text>
+
+  <line x1="650" y1="690" x2="650" y2="730" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="410" y="730" width="480" height="65" rx="10" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.5"/>
+  <text x="650" y="755" text-anchor="middle" font-size="13" fill="#111827">CloudFront → dashboard.html</text>
+  <text x="650" y="774" text-anchor="middle" font-size="11" fill="#374151">read-only, no AWS credentials on the page; polls session results or reads results/latest.json</text>
+
+  <line x1="650" y1="795" x2="650" y2="830" stroke="#4b5563" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="500" y="830" width="300" height="55" rx="10" fill="#ffffff" stroke="#6d28d9" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="650" y="853" text-anchor="middle" font-size="13" font-weight="700" fill="#111827">Anyone with a browser</text>
+  <text x="650" y="871" text-anchor="middle" font-size="10.5" fill="#374151">operator (bulk report) or the visitor who just uploaded</text>
+
+  <!-- ===================== IAM note ===================== -->
+  <rect x="40" y="700" width="330" height="140" rx="10" fill="#fff1f2" stroke="#be123c" stroke-width="1.5"/>
+  <text x="205" y="722" text-anchor="middle" font-size="13" font-weight="700" fill="#9f1239">IAM: three single-purpose roles</text>
+  <text x="205" y="746" text-anchor="middle" font-size="11" fill="#374151">Execution role — pull image, ship logs</text>
+  <text x="205" y="766" text-anchor="middle" font-size="11" fill="#374151">Task role — read/write S3 + call Bedrock,</text>
+  <text x="205" y="782" text-anchor="middle" font-size="11" fill="#374151">scoped to one bucket</text>
+  <text x="205" y="806" text-anchor="middle" font-size="11" fill="#374151">EventBridge invocation role — ecs:RunTask only</text>
+  <text x="205" y="826" text-anchor="middle" font-size="10" fill="#6b7280">no role does more than one job</text>
+
+  <rect x="930" y="700" width="330" height="100" rx="10" fill="#fff1f2" stroke="#be123c" stroke-width="1.5"/>
+  <text x="1095" y="722" text-anchor="middle" font-size="13" font-weight="700" fill="#9f1239">Cost caps (Path B)</text>
+  <text x="1095" y="745" text-anchor="middle" font-size="11" fill="#374151">15 scans/day · 3 running at once</text>
+  <text x="1095" y="764" text-anchor="middle" font-size="11" fill="#374151">≤30 findings sent to Claude per scan</text>
+  <text x="1095" y="784" text-anchor="middle" font-size="10" fill="#6b7280">≈$4/month worst case, $5 AWS Budget alert on top</text>
+</svg>

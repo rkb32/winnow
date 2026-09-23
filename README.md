@@ -20,34 +20,9 @@ Claude (Haiku 4.5 on Bedrock) then reviews every finding and decides what to qua
 
 ## Architecture
 
-```
-S3 bucket (images land in samples/)
-   │  EventBridge rule watches samples/* only (never results/*, avoids a trigger loop)
-   ▼
-ECS Fargate task (ARM64 / Graviton)
-   │  scan.py runs the three detectors above
-   │  agent.py sends findings to Claude (via Bedrock) → decides quarantine/keep
-   │  flagged images get copied to quarantine/ in the same bucket
-   ▼
-Results written to S3 (results/latest.json + a timestamped copy)
-   ▼
-dashboard.html reads results/latest.json directly, served publicly via CloudFront (read-only, no credentials on the page)
-```
+![Winnow architecture: two entry paths (bulk S3 scan, public website upload) both feed the same ECS Fargate task, which runs the detectors and the Claude agent, writes results to S3, and serves them through CloudFront](winnow/architecture.svg)
 
-The website adds a second entry point into the same container, for people who don't have AWS access:
-
-```
-Visitor picks photos on the site
-   │  Lambda (winnow/api/app.py) hands out presigned upload links:
-   │  one per file, JPEG/PNG only, ≤ 5 MB, into uploads/<session>/ only
-   ▼
-Browser uploads straight to S3, then asks the Lambda to start the scan
-   │  Lambda checks the cost caps, then starts the Fargate task with WINNOW_SESSION set
-   ▼
-Same scanner + Claude agent, scoped to that one batch
-   ▼
-results/sessions/<session>.json, which the page polls for and renders
-```
+Two ways in, one pipeline: an operator with AWS access drops photos in `samples/` and EventBridge triggers a scan (Path A), or anyone uses the public site, which hands out presigned S3 upload links and starts a scoped scan through a Lambda Function URL (Path B). Both land in the same ECS Fargate task — detectors, then the Claude agent, then results in S3 — and both are read back through the same read-only CloudFront-served dashboard.
 
 Uploaded photos are never readable publicly (CloudFront can only read `dashboard.html` and `results/`), and S3 lifecycle rules delete uploads after 1 day and reports after 7.
 
@@ -123,7 +98,7 @@ An earlier, smaller check (`run_experiment.py`): 10/10 planted exact leaks caugh
 - **Duplicate comparison is O(n²)**: every image is hashed against every other image. Fine for hundreds of images, too slow for a real dataset of thousands. At scale this would need an approximate-nearest-neighbor index (e.g. FAISS or Annoy) instead of brute-force pairwise comparison.
 - **Some thresholds are calibrated, others aren't**: the edited-copy thresholds (0.80 similarity, 25 keypoints) were calibrated on Imagenette, which is still one dataset. `sharpness ≤ 200` is a fixed number, so it depends on resolution: it can flag plain-background shots and miss soft focus in large photos. A per-dataset relative threshold would be better.
 - **Flags are for human review, not automatic deletion, at dataset scale**: 20% of the keypoint-stage flags in the full audit were look-alikes sharing a stock template or landmark. The website's previews and Keep/Remove overrides exist for exactly this.
-- **The keypoint check recomputes features per pair**: fine for 20 photos, but the full audit spent ~30 of its 34 minutes there. Caching each photo's SIFT features once would make it roughly 3× faster.
+- ~~The keypoint check recomputes features per pair~~ — **fixed**: SIFT features are now cached per photo (`_keypoints_for` in `winnow/semantic.py`), so a photo compared against many others only pays that cost once instead of once per pair. This was the dominant cost in the full audit below.
 - **Heavily compressed crops can slip through**: a copy that's both cropped and heavily recompressed may fail both the hash and the keypoint check (2 of 75 planted leaks were missed).
 - **Photo previews exist only in the tab you scanned from**: they're drawn from your own files in the browser, never from a public copy, so reloading a shared result link shows the report without thumbnails.
 - **Bedrock agent has a one-time setup dependency**: AWS requires each account to submit a "use case" form to Anthropic before the model can be invoked; this is a one-time manual step, not something the pipeline can do for itself.

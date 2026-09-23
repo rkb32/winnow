@@ -6,6 +6,7 @@
    garbage trucks score ~0.9); only a real copy has hundreds of points that line up.
 """
 import os
+from functools import lru_cache
 
 import cv2
 import numpy as np
@@ -58,6 +59,17 @@ def _keypoints(image):
     return _sift.detectAndCompute(image, None)
 
 
+# A pair-comparison workload compares the same photo against many others (a burst of
+# near-identical shots, or one photo checked against an entire other split), so SIFT features
+# get requested for the same path repeatedly. Keyed by path since content is fixed for a scan.
+@lru_cache(maxsize=512)
+def _keypoints_for(path, flipped=False):
+    image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    if flipped:
+        image = cv2.flip(image, 1)
+    return _keypoints(image)
+
+
 def _ransac_inliers(features_a, features_b):
     (kp_a, des_a), (kp_b, des_b) = features_a, features_b
     if des_a is None or des_b is None or len(kp_a) < 2 or len(kp_b) < 2:
@@ -74,11 +86,9 @@ def _ransac_inliers(features_a, features_b):
 
 def keypoint_inliers(path_a, path_b):
     """Keypoint matches consistent with one geometric transform, trying path_a mirrored too."""
-    a = cv2.imread(path_a, cv2.IMREAD_GRAYSCALE)
-    b = cv2.imread(path_b, cv2.IMREAD_GRAYSCALE)
-    features_b = _keypoints(b)
-    return max(_ransac_inliers(_keypoints(a), features_b),
-               _ransac_inliers(_keypoints(cv2.flip(a, 1)), features_b))
+    features_b = _keypoints_for(path_b)
+    return max(_ransac_inliers(_keypoints_for(path_a), features_b),
+               _ransac_inliers(_keypoints_for(path_a, flipped=True), features_b))
 
 
 def _verified_pairs(left, right, skip, same_set):
