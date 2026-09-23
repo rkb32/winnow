@@ -4,6 +4,8 @@ A data-quality auditor for computer vision training datasets. Built for the [Ope
 
 Point it at a folder of training images and it flags the things that quietly corrupt a model before anyone notices: near-duplicate photos, images duplicated across train/test splits (leakage), blurry images, and EXIF orientation tags that don't match how an image actually displays (which shifts bounding boxes without warning). It never stores or forwards the images themselves, everything runs read-in-place.
 
+**Live dashboard:** https://d1oc3ay9n04ubj.cloudfront.net/ — read-only, shows the results from the last real scan.
+
 ## What it catches
 
 | Problem | How | Why it matters |
@@ -25,7 +27,7 @@ ECS Fargate task (ARM64 / Graviton)
    ▼
 Results written to S3 (results/latest.json + a timestamped copy)
    ▼
-dashboard.html reads results/latest.json directly (presigned URL, read-only)
+dashboard.html reads results/latest.json directly, served publicly via CloudFront (read-only, no credentials on the page)
 ```
 
 IAM is split into three roles by who needs what: an execution role (lets ECS pull the image and ship logs), a task role (lets the running code read/write S3 and call Bedrock, scoped to one bucket), and an EventBridge invocation role (lets the trigger call `ecs:RunTask`). No role does more than one job.
@@ -67,4 +69,4 @@ Ran the duplicate/leakage detector against 130 real photos from [Imagenette](htt
 - **Thresholds are provisional**: `distance ≤ 5` and `sharpness ≤ 200` were set from a mix of synthetic test images and a small real-photo sample, not a broad calibration study. They should be tuned against a larger, more diverse dataset before relying on them for a real decision.
 - **No automated test suite yet**: the detectors were validated through manual runs and the Imagenette experiment above, not a checked-in `pytest` suite.
 - **Bedrock agent has a one-time setup dependency**: AWS requires each account to submit a "use case" form to Anthropic before the model can be invoked; this is a one-time manual step, not something the pipeline can do for itself.
-- **Dashboard uses a presigned URL, not a public endpoint**: this avoids putting AWS credentials in a publicly hosted page. A production version would put results behind a real API instead.
+- **Dashboard is read-only and unauthenticated**: the live link above serves `results/latest.json` to anyone who has it, via CloudFront with no login. Fine for a public demo of non-sensitive sample data; a production version scanning real private datasets would need the dashboard behind real auth instead.

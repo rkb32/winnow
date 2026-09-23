@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
-dashboard.html
 imagenette_exp/imagenette2-160.tgz
 imagenette_exp/imagenette2-160/
 imagenette_exp/combined/

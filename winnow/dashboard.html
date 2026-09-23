@@ -1,0 +1,270 @@
+<meta charset="utf-8">
+<title>Winnow Audit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --border: #E5E2DA;
+    --text: #1A1A17;
+    --text-dim: #6E6B62;
+    --accent: #3454D1;
+    --accent-soft: #EAEDFB;
+    --danger: #A3271E;
+    --danger-soft: #FBEAE8;
+    --success: #1E7B4D;
+    --success-soft: #E7F5ED;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15161A;
+      --surface: #1C1E24;
+      --border: #2C2F38;
+      --text: #EDEDEF;
+      --text-dim: #9A9CA6;
+      --accent: #8DA0FF;
+      --accent-soft: #262B45;
+      --danger: #FF8A80;
+      --danger-soft: #3A2323;
+      --success: #6EE7A0;
+      --success-soft: #1E332A;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15161A;
+    --surface: #1C1E24;
+    --border: #2C2F38;
+    --text: #EDEDEF;
+    --text-dim: #9A9CA6;
+    --accent: #8DA0FF;
+    --accent-soft: #262B45;
+    --danger: #FF8A80;
+    --danger-soft: #3A2323;
+    --success: #6EE7A0;
+    --success-soft: #1E332A;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    padding: 28px 16px 48px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 6px;
+  }
+  h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; text-wrap: balance; }
+  .sub { color: var(--text-dim); font-size: 14px; margin: 0 0 4px; }
+  .headline {
+    font-size: 17px;
+    font-weight: 500;
+    margin: 16px 0 28px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .headline b { color: var(--accent); }
+  section { margin-bottom: 30px; }
+  h2 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  .h2-sub { font-size: 13px; color: var(--text-dim); margin: 0 0 12px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .names { font-weight: 500; font-size: 14px; }
+  .names .file { font-family: "IBM Plex Mono", monospace; font-weight: 400; }
+  .explain { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+  .detail { font-size: 11px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; margin-top: 2px; }
+  .chip {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .chip.bad { background: var(--danger-soft); color: var(--danger); }
+  .chip.good { background: var(--success-soft); color: var(--success); }
+  .empty {
+    color: var(--text-dim);
+    font-size: 13px;
+    font-style: italic;
+    padding: 4px 0 0;
+  }
+  #status { color: var(--text-dim); font-size: 12px; font-family: "IBM Plex Mono", monospace; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Winnow</p>
+  <h1>Is your photo set ready to train on?</h1>
+  <p class="sub" id="status">Loading latest scan…</p>
+
+  <div class="headline" id="headline"></div>
+
+  <section>
+    <h2>Duplicate Photos</h2>
+    <p class="h2-sub">Two files that are really the same picture, keeping both can trick a model into looking more accurate than it really is.</p>
+    <div id="duplicates"></div>
+  </section>
+
+  <section>
+    <h2>Blurry Photos</h2>
+    <p class="h2-sub">Too out of focus to be useful for training.</p>
+    <div id="blurry"></div>
+  </section>
+
+  <section>
+    <h2>Rotation Problems</h2>
+    <p class="h2-sub">The file says "rotate me" but the box coordinates weren't updated to match, this can put bounding boxes in the wrong place.</p>
+    <div id="exif"></div>
+  </section>
+
+  <section>
+    <h2>AI Recommendations</h2>
+    <p class="h2-sub">Claude reviewed every issue above and decided what to do about it.</p>
+    <div id="decisions"></div>
+  </section>
+
+  <section>
+    <h2>Couldn't Be Scanned</h2>
+    <p class="h2-sub">Files that failed to open, likely corrupted or not actually images.</p>
+    <div id="unreadable"></div>
+  </section>
+</div>
+
+<script>
+  const RESULTS_URL = "results/latest.json";
+
+  function filename(path) {
+    return path.split("/").pop().split("__").pop();
+  }
+
+  function card(topHtml, explainHtml, detailHtml) {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML =
+      `<div class="card-top">${topHtml}</div>` +
+      (explainHtml ? `<div class="explain">${explainHtml}</div>` : "") +
+      (detailHtml ? `<div class="detail">${detailHtml}</div>` : "");
+    return div;
+  }
+
+  function renderEmpty(container, text) {
+    container.innerHTML = `<div class="empty">${text}</div>`;
+  }
+
+  fetch(RESULTS_URL)
+    .then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(data => {
+      document.getElementById("status").textContent = "Live scan results, read-only";
+
+      const dupCount = data.duplicate_pairs.length;
+      const blurCount = data.blurry_images.length;
+      const exifCount = data.risky_orientation_images.length;
+      const badCount = data.unreadable_images.length;
+      const totalIssues = dupCount + blurCount + exifCount + badCount;
+
+      document.getElementById("headline").innerHTML = totalIssues === 0
+        ? `<b>Looks clean.</b> No duplicates, blur, or rotation problems found.`
+        : `Found <b>${totalIssues} issue${totalIssues === 1 ? "" : "s"}</b> across this batch: ` +
+          [dupCount && `${dupCount} duplicate pair${dupCount === 1 ? "" : "s"}`,
+           blurCount && `${blurCount} blurry photo${blurCount === 1 ? "" : "s"}`,
+           exifCount && `${exifCount} rotation problem${exifCount === 1 ? "" : "s"}`,
+           badCount && `${badCount} unreadable file${badCount === 1 ? "" : "s"}`]
+            .filter(Boolean).join(", ") + ".";
+
+      const dup = document.getElementById("duplicates");
+      if (dupCount) {
+        data.duplicate_pairs.forEach(([a, b, dist]) => {
+          dup.appendChild(card(
+            `<span class="names"><span class="file">${filename(a)}</span> and <span class="file">${filename(b)}</span></span>` +
+            `<span class="chip bad">${dist === 0 ? "Exact match" : "Very similar"}</span>`,
+            "These look like the same photo, pick one and remove the other.",
+            `perceptual hash distance: ${dist} (flagged if ≤ 5)`
+          ));
+        });
+      } else renderEmpty(dup, "None found, no duplicates in this batch.");
+
+      const blur = document.getElementById("blurry");
+      if (blurCount) {
+        data.blurry_images.forEach(([p, sharpness]) => {
+          blur.appendChild(card(
+            `<span class="names file">${filename(p)}</span><span class="chip bad">Too blurry</span>`,
+            null,
+            `Laplacian variance: ${Number(sharpness).toFixed(1)} (lower = blurrier, flagged if ≤ 200)`
+          ));
+        });
+      } else renderEmpty(blur, "None found, every photo is sharp enough to use.");
+
+      const exif = document.getElementById("exif");
+      const ORIENTATION_NAMES = {
+        1: "normal", 2: "flip horizontal", 3: "rotate 180°",
+        4: "flip vertical", 5: "transpose", 6: "rotate 90° CW",
+        7: "transverse", 8: "rotate 90° CCW",
+      };
+      if (exifCount) {
+        data.risky_orientation_images.forEach(([p, orientation, swapsDims]) => {
+          exif.appendChild(card(
+            `<span class="names file">${filename(p)}</span>` +
+            (swapsDims ? `<span class="chip bad">Bounding box risk</span>` : `<span class="chip bad">Rotation flagged</span>`),
+            swapsDims ? "This rotation also flips width and height, high risk of misplaced bounding boxes." : null,
+            `EXIF orientation tag: ${orientation} (${ORIENTATION_NAMES[orientation] || "unknown"}) — flagged because it isn't 1 (normal)`
+          ));
+        });
+      } else renderEmpty(exif, "None found, no rotation conflicts.");
+
+      const dec = document.getElementById("decisions");
+      const decisions = data.agent_decisions || [];
+      if (decisions.length) {
+        decisions.forEach(d => {
+          const label = d.action === "quarantine" ? "Remove" : "Keep";
+          const chipClass = d.action === "quarantine" ? "bad" : "good";
+          dec.appendChild(card(
+            `<span class="names file">${filename(d.file)}</span><span class="chip ${chipClass}">${label}</span>`,
+            d.reason || null
+          ));
+        });
+      } else renderEmpty(dec, "No recommendations yet.");
+
+      const unreadable = document.getElementById("unreadable");
+      const unreadableImages = data.unreadable_images || [];
+      if (unreadableImages.length) {
+        unreadableImages.forEach(([p]) => {
+          unreadable.appendChild(card(
+            `<span class="names file">${filename(p)}</span><span class="chip bad">Couldn't open</span>`,
+            "This file may be corrupted, or it isn't actually a valid image."
+          ));
+        });
+      } else renderEmpty(unreadable, "None, every file opened fine.");
+    })
+    .catch(err => {
+      document.getElementById("status").textContent = "Could not load results (" + err.message + ")";
+    });
+</script>
