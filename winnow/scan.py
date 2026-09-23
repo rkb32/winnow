@@ -2,8 +2,8 @@ import os
 import sys
 
 from blur import compute_sharpness, is_too_blurry
-from duplicates import find_duplicate_pairs
-from exif_conflict import get_orientation, has_risky_orientation
+from duplicates import find_duplicate_pairs, find_leaked_pairs
+from exif_conflict import get_orientation, has_risky_orientation, swaps_dimensions
 
 
 def list_images(folder_path):
@@ -14,25 +14,39 @@ def list_images(folder_path):
     ]
 
 
-def scan_folder(folder_path):
+def scan_folder(folder_path, test_folder_path=None):
     image_paths = list_images(folder_path)
 
     blurry_images = []
     risky_orientation_images = []
+    unreadable_images = []
+    readable_paths = []
     for path in image_paths:
-        sharpness = compute_sharpness(path)
+        try:
+            sharpness = compute_sharpness(path)
+            orientation = get_orientation(path)
+        except Exception as e:
+            unreadable_images.append((path, str(e)))
+            continue
+
+        readable_paths.append(path)
         if is_too_blurry(sharpness):
             blurry_images.append((path, sharpness))
-
-        orientation = get_orientation(path)
         if has_risky_orientation(orientation):
-            risky_orientation_images.append((path, orientation))
+            risky_orientation_images.append((path, orientation, swaps_dimensions(orientation)))
 
-    return {
-        "duplicate_pairs": find_duplicate_pairs(image_paths),
+    result = {
+        "duplicate_pairs": find_duplicate_pairs(readable_paths),
         "blurry_images": blurry_images,
         "risky_orientation_images": risky_orientation_images,
+        "unreadable_images": unreadable_images,
     }
+
+    if test_folder_path:
+        test_paths = [p for p in list_images(test_folder_path) if p not in unreadable_images]
+        result["leaked_pairs"] = find_leaked_pairs(readable_paths, test_paths)
+
+    return result
 
 
 if __name__ == "__main__":
@@ -40,3 +54,4 @@ if __name__ == "__main__":
     print("Duplicate pairs:          ", result["duplicate_pairs"])
     print("Blurry images:            ", result["blurry_images"])
     print("Risky EXIF orientation:   ", result["risky_orientation_images"])
+    print("Unreadable images:        ", result["unreadable_images"])

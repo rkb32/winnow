@@ -11,8 +11,13 @@ def build_findings_summary(result):
         findings.append({"type": "duplicate", "files": [a, b], "distance": dist})
     for path, sharpness in result["blurry_images"]:
         findings.append({"type": "blurry", "file": path, "sharpness": sharpness})
-    for path, orientation in result["risky_orientation_images"]:
-        findings.append({"type": "risky_exif", "file": path, "orientation": orientation})
+    for path, orientation, swaps_dims in result["risky_orientation_images"]:
+        findings.append({
+            "type": "risky_exif",
+            "file": path,
+            "orientation": orientation,
+            "swaps_dimensions": swaps_dims,
+        })
     return findings
 
 
@@ -47,15 +52,16 @@ def decide_actions(result):
     return json.loads(text[start:end + 1])
 
 
-def apply_quarantine(bucket, decisions):
+def apply_quarantine(bucket, decisions, key_by_local_path):
     s3 = boto3.client("s3")
     moved = []
     for decision in decisions:
         if decision.get("action") != "quarantine":
             continue
-        local_path = decision["file"]
-        filename = local_path.rsplit("/", 1)[-1]
-        src_key = f"samples/{filename}"
+        src_key = key_by_local_path.get(decision["file"])
+        if src_key is None:
+            continue
+        filename = src_key.rsplit("/", 1)[-1]
         dest_key = f"quarantine/{filename}"
         try:
             s3.copy_object(Bucket=bucket, CopySource={"Bucket": bucket, "Key": src_key}, Key=dest_key)

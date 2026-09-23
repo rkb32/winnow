@@ -22,9 +22,19 @@ def is_duplicate(distance):
         return False
 
 
+def _safe_hashes(paths):
+    hashes = {}
+    for path in paths:
+        try:
+            hashes[path] = compute_hash(path)
+        except Exception:
+            continue
+    return hashes
+
+
 def find_leaked_pairs(train_paths, test_paths):
-    train_hashes = {path: compute_hash(path) for path in train_paths}
-    test_hashes = {path: compute_hash(path) for path in test_paths}
+    train_hashes = _safe_hashes(train_paths)
+    test_hashes = _safe_hashes(test_paths)
     leaks = []
     for train_path, train_hash in train_hashes.items():
         for test_path, test_hash in test_hashes.items():
@@ -35,7 +45,7 @@ def find_leaked_pairs(train_paths, test_paths):
 
 
 def find_duplicate_pairs(image_paths):
-    hashes = {path: compute_hash(path) for path in image_paths}
+    hashes = _safe_hashes(image_paths)
     paths = list(hashes.keys())
     pairs = []
     for i in range(len(paths)):
