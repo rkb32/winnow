@@ -18,6 +18,7 @@ MAX_BYTES = 5 * 1024 * 1024
 MAX_RUNNING_SCANS = 3
 DAILY_SCAN_LIMIT = 15
 EXTENSION_BY_TYPE = {"image/jpeg": ".jpg", "image/png": ".png"}
+FOLDER_BY_SPLIT = {"train": "images", "test": "test"}
 SESSION_RE = re.compile(r"^[0-9a-f]{32}$")
 
 s3 = boto3.client("s3")
@@ -47,10 +48,15 @@ def create_upload_urls(body):
     session = uuid.uuid4().hex
     uploads = []
     for i, f in enumerate(files):
-        content_type = f.get("type") if isinstance(f, dict) else None
+        if not isinstance(f, dict):
+            return respond(400, {"error": "Invalid file list."})
+        content_type = f.get("type")
         if content_type not in EXTENSION_BY_TYPE:
             return respond(400, {"error": "Only JPEG and PNG photos are supported."})
-        key = f"uploads/{session}/images/{i}/{safe_name(str(f.get('name', '')), content_type)}"
+        folder = FOLDER_BY_SPLIT.get(f.get("split", "train"))
+        if folder is None:
+            return respond(400, {"error": "Invalid split."})
+        key = f"uploads/{session}/{folder}/{i}/{safe_name(str(f.get('name', '')), content_type)}"
         uploads.append(s3.generate_presigned_post(
             BUCKET,
             key,

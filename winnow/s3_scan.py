@@ -6,7 +6,7 @@ import tempfile
 import boto3
 
 from scan import scan_folder
-from agent import decide_actions, apply_quarantine
+from agent import MAX_FINDINGS, apply_quarantine, build_findings_summary, decide_actions
 
 
 def download_bucket_prefix(bucket, prefix, dest_dir):
@@ -46,20 +46,24 @@ def run(bucket, prefix, test_prefix, quarantine_prefix):
         if test_prefix:
             test_dir = os.path.join(tmp_dir, "_test_split")
             os.makedirs(test_dir)
-            key_by_local_path.update(download_bucket_prefix(bucket, test_prefix, test_dir))
+            test_keys = download_bucket_prefix(bucket, test_prefix, test_dir)
+            key_by_local_path.update(test_keys)
+            if not test_keys:
+                test_dir = None
 
         result = scan_folder(tmp_dir, test_folder_path=test_dir)
 
-    decisions, quarantined = [], []
-    try:
-        decisions = decide_actions(result)
-        quarantined = apply_quarantine(bucket, decisions, key_by_local_path, quarantine_prefix)
-    except Exception as e:
-        print("Agent step skipped:", e)
-
     combined = dict(result)
-    combined["agent_decisions"] = decisions
-    combined["quarantined"] = quarantined
+    combined["agent_decisions"] = []
+    combined["quarantined"] = []
+    combined["agent_truncated"] = len(build_findings_summary(result)) > MAX_FINDINGS
+    try:
+        combined["agent_decisions"] = decide_actions(result)
+        combined["quarantined"] = apply_quarantine(
+            bucket, combined["agent_decisions"], key_by_local_path, quarantine_prefix)
+    except Exception as e:
+        print("Agent step failed:", e)
+        combined["agent_error"] = True
     return combined
 
 
@@ -68,13 +72,15 @@ if __name__ == "__main__":
     session = os.environ.get("WINNOW_SESSION")
     if session:
         prefix = f"uploads/{session}/images/"
+        test_prefix = f"uploads/{session}/test/"
         quarantine_prefix = f"uploads/{session}/quarantine/"
     else:
         prefix = os.environ.get("WINNOW_PREFIX", "")
+        test_prefix = os.environ.get("WINNOW_TEST_PREFIX")
         quarantine_prefix = "quarantine/"
 
     try:
-        combined = run(bucket, prefix, os.environ.get("WINNOW_TEST_PREFIX"), quarantine_prefix)
+        combined = run(bucket, prefix, test_prefix, quarantine_prefix)
     except Exception:
         # Without this, a visitor's page would poll for a result that never arrives.
         if session:

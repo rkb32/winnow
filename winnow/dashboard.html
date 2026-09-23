@@ -90,6 +90,8 @@
   .dz-title { font-weight: 600; font-size: 15px; }
   .dz-sub { font-size: 13px; color: var(--text-dim); }
   .dz-picked { font-size: 13px; color: var(--accent); font-weight: 500; min-height: 1em; }
+  .dropzone-test { margin-top: 10px; padding: 16px; border-width: 1px; }
+  .dropzone-test .dz-title { font-size: 14px; }
   .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
   button {
     font: inherit;
@@ -163,6 +165,45 @@
     padding: 4px 0 0;
   }
   #status { color: var(--text-dim); font-size: 13px; }
+  .thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .thumb {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    cursor: zoom-in;
+  }
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.85);
+    cursor: zoom-out;
+  }
+  .lightbox[hidden] { display: none; }
+  .lightbox img { max-width: 100%; max-height: 85vh; border-radius: 8px; }
+  .lightbox p { color: #FFFFFF; font-family: "IBM Plex Mono", monospace; font-size: 13px; margin: 0; }
+  .link-btn { background: none; color: var(--accent); padding: 0; font-weight: 500; text-decoration: underline; }
+  .toggle {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    background: none;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .download { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -12px 0 28px; }
+  .download[hidden] { display: none; }
+  .fix { font-size: 13px; margin: 0 0 12px; }
+  .fix b { font-weight: 600; }
 </style>
 
 <div class="wrap">
@@ -173,12 +214,19 @@
   <div class="upload">
     <label class="dropzone" id="dropzone">
       <input type="file" id="file-input" multiple accept="image/jpeg,image/png">
-      <span class="dz-title">Drop photos here, or click to choose</span>
-      <span class="dz-sub">Up to 20 JPEG or PNG photos, 5 MB each</span>
+      <span class="dz-title">Drop training photos here, or click to choose</span>
+      <span class="dz-sub">Up to 20 JPEG or PNG photos in total, 5 MB each</span>
       <span class="dz-picked" id="picked"></span>
+    </label>
+    <label class="dropzone dropzone-test" id="test-dropzone">
+      <input type="file" id="test-input" multiple accept="image/jpeg,image/png">
+      <span class="dz-title">Optional: add your test photos</span>
+      <span class="dz-sub">Winnow checks whether any of them also appear in your training photos</span>
+      <span class="dz-picked" id="test-picked"></span>
     </label>
     <div class="actions">
       <button id="scan-btn" disabled>Scan my photos</button>
+      <button class="link-btn" id="example-btn" type="button">No photos handy? Load example photos</button>
       <p id="upload-status" role="status"></p>
     </div>
     <p class="note">Your photos are never shown publicly and are deleted automatically within about a day. Please don't upload anything private.</p>
@@ -189,21 +237,36 @@
 
   <div class="headline" id="headline"></div>
 
+  <div class="download" id="download-bar" hidden>
+    <button id="download-btn" type="button">Download cleaned photos</button>
+    <span class="sub" id="download-note"></span>
+  </div>
+
+  <section id="leak-section" hidden>
+    <h2>Train/Test Leaks</h2>
+    <p class="h2-sub">Test photos that also appear in your training photos. The model has already seen them, so its test score will look better than it really is.</p>
+    <p class="fix"><b>Fix:</b> delete the training copy of each pair (the download above does this), then re-measure your test score.</p>
+    <div id="leaks"></div>
+  </section>
+
   <section>
     <h2>Duplicate Photos</h2>
     <p class="h2-sub">Two files that are really the same picture, keeping both can trick a model into looking more accurate than it really is.</p>
+    <p class="fix"><b>Fix:</b> keep one photo from each pair. The download above drops the extras Claude marked Remove.</p>
     <div id="duplicates"></div>
   </section>
 
   <section>
     <h2>Blurry Photos</h2>
     <p class="h2-sub">Too out of focus to be useful for training.</p>
+    <p class="fix"><b>Fix:</b> drop them, or retake them if that class is short on examples.</p>
     <div id="blurry"></div>
   </section>
 
   <section>
     <h2>Rotation Problems</h2>
-    <p class="h2-sub">The file says "rotate me" but the box coordinates weren't updated to match, this can put bounding boxes in the wrong place.</p>
+    <p class="h2-sub">Photos with a hidden "rotate me" tag. If your labels were drawn on the unrotated photo, they may no longer line up. Winnow can't see your label files, so these are worth checking by hand.</p>
+    <p class="fix"><b>Fix:</b> open a few in your labeling tool. If the boxes are off, re-save the photos with rotation applied (for example Pillow's <code>ImageOps.exif_transpose</code>) and redraw those boxes.</p>
     <div id="exif"></div>
   </section>
 
@@ -216,8 +279,14 @@
   <section>
     <h2>Couldn't Be Scanned</h2>
     <p class="h2-sub">Files that failed to open, likely corrupted or not actually images.</p>
+    <p class="fix"><b>Fix:</b> re-export or re-download these files, a model can't learn from them.</p>
     <div id="unreadable"></div>
   </section>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <img id="lightbox-img" alt="">
+  <p id="lightbox-name"></p>
 </div>
 
 <script>
@@ -226,6 +295,7 @@
   const MAX_BYTES = 5 * 1024 * 1024;
   const ALLOWED_TYPES = ["image/jpeg", "image/png"];
   const SESSION_RE = /^[0-9a-f]{32}$/;
+  const MIN_INLIERS = 25;
   const ORIENTATION_NAMES = {
     1: "normal", 2: "flip horizontal", 3: "rotate 180°",
     4: "flip vertical", 5: "transpose", 6: "rotate 90° CW",
@@ -233,7 +303,9 @@
   };
 
   const fileInput = document.getElementById("file-input");
-  const dropzone = document.getElementById("dropzone");
+  const testInput = document.getElementById("test-input");
+  const leakSection = document.getElementById("leak-section");
+  const leakContainer = document.getElementById("leaks");
   const scanBtn = document.getElementById("scan-btn");
   const uploadStatus = document.getElementById("upload-status");
   const resultsLabel = document.getElementById("results-label");
@@ -256,14 +328,46 @@
     return String(text).replace(/[^\s()]*__/g, "");
   }
 
-  function card(topHtml, explainHtml, detailHtml) {
+  // The visitor's own files stay in the browser, keyed "images/3" or "test/7" to match
+  // the scanner's paths (…__images__3__name.png), so previews never need a public copy.
+  const localFiles = new Map();
+  const previewUrls = new Map();
+  const overrides = new Map();
+  let currentData = null;
+
+  function fileKey(path) {
+    const parts = String(path).split("/").pop().split("__");
+    return parts.length >= 3 ? `${parts.at(-3)}/${parts.at(-2)}` : null;
+  }
+
+  function previewUrl(path) {
+    const file = localFiles.get(fileKey(path));
+    if (!file) return null;
+    if (!previewUrls.has(file)) previewUrls.set(file, URL.createObjectURL(file));
+    return previewUrls.get(file);
+  }
+
+  function thumbsHtml(paths) {
+    const imgs = paths.map(p => {
+      const url = previewUrl(p);
+      return url ? `<img class="thumb" src="${esc(url)}" alt="${esc(filename(p))}" data-name="${esc(filename(p))}">` : "";
+    }).join("");
+    return imgs ? `<div class="thumbs">${imgs}</div>` : "";
+  }
+
+  function card(topHtml, explainHtml, detailHtml, paths = []) {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML =
       `<div class="card-top">${topHtml}</div>` +
       (explainHtml ? `<div class="explain">${explainHtml}</div>` : "") +
-      (detailHtml ? `<div class="detail">${detailHtml}</div>` : "");
+      (detailHtml ? `<div class="detail">${detailHtml}</div>` : "") +
+      thumbsHtml(paths);
     return div;
+  }
+
+  function actionFor(decision) {
+    return overrides.get(decision.file) || decision.action;
   }
 
   function renderEmpty(container, text) {
@@ -273,6 +377,14 @@
   function clearResults(message) {
     document.getElementById("headline").textContent = message;
     containers.forEach(c => { c.innerHTML = ""; });
+    leakContainer.innerHTML = "";
+    leakSection.hidden = true;
+    document.getElementById("download-bar").hidden = true;
+  }
+
+  function editedCopyDetail(sim, inliers) {
+    return `DNN embedding similarity ${esc(sim)} (candidate if ≥ 0.80), confirmed by ` +
+      `${esc(inliers)} SIFT keypoints agreeing on one geometric transform (needs ≥ ${MIN_INLIERS})`;
   }
 
   function plural(n, word) {
@@ -280,6 +392,7 @@
   }
 
   function render(data) {
+    currentData = data;
     clearResults("");
     const [dup, blur, exif, dec, unreadable] = containers;
     const duplicatePairs = data.duplicate_pairs || [];
@@ -287,16 +400,38 @@
     const exifImages = data.risky_orientation_images || [];
     const unreadableImages = data.unreadable_images || [];
     const decisions = data.agent_decisions || [];
-    const totalIssues = duplicatePairs.length + blurryImages.length + exifImages.length + unreadableImages.length;
+    const leakedPairs = data.leaked_pairs || [];
+    const similarLeaks = data.similar_leaks || [];
+    const similarPairs = data.similar_pairs || [];
+    const leakCount = leakedPairs.length + similarLeaks.length;
+    const dupCount = duplicatePairs.length + similarPairs.length;
+    const totalIssues = leakCount + dupCount + blurryImages.length + exifImages.length + unreadableImages.length;
 
     document.getElementById("headline").innerHTML = totalIssues === 0
-      ? `<b>Looks clean.</b> No duplicates, blur, or rotation problems found.`
+      ? `<b>Looks clean.</b> No leaks, duplicates, blur, or rotation problems found.`
       : `Found <b>${plural(totalIssues, "issue")}</b> across this batch: ` +
-        [duplicatePairs.length && plural(duplicatePairs.length, "duplicate pair"),
+        [leakCount && plural(leakCount, "train/test leak"),
+         dupCount && plural(dupCount, "duplicate pair"),
          blurryImages.length && plural(blurryImages.length, "blurry photo"),
          exifImages.length && plural(exifImages.length, "rotation problem"),
          unreadableImages.length && plural(unreadableImages.length, "unreadable file")]
           .filter(Boolean).join(", ") + ".";
+
+    if (data.leaked_pairs !== undefined) {
+      leakSection.hidden = false;
+      const leakCard = (train, test, chip, detail) => leakContainer.appendChild(card(
+        `<span class="names">Test photo <span class="file">${esc(filename(test))}</span> matches training photo <span class="file">${esc(filename(train))}</span></span>` +
+        `<span class="chip bad">${chip}</span>`,
+        "Remove one copy, usually the training one, so your test score stays honest.",
+        detail,
+        [train, test]
+      ));
+      leakedPairs.forEach(([train, test, dist]) =>
+        leakCard(train, test, "Leak", `perceptual hash distance: ${esc(dist)} (flagged if ≤ 5)`));
+      similarLeaks.forEach(([train, test, sim, inliers]) =>
+        leakCard(train, test, "Leak, edited copy", editedCopyDetail(sim, inliers)));
+      if (!leakCount) renderEmpty(leakContainer, "None found, your test photos don't appear in the training photos.");
+    }
 
     if (duplicatePairs.length) {
       duplicatePairs.forEach(([a, b, dist]) => {
@@ -304,17 +439,29 @@
           `<span class="names"><span class="file">${esc(filename(a))}</span> and <span class="file">${esc(filename(b))}</span></span>` +
           `<span class="chip bad">${Number(dist) === 0 ? "Exact match" : "Very similar"}</span>`,
           "These look like the same photo, pick one and remove the other.",
-          `perceptual hash distance: ${esc(dist)} (flagged if ≤ 5)`
+          `perceptual hash distance: ${esc(dist)} (flagged if ≤ 5)`,
+          [a, b]
         ));
       });
-    } else renderEmpty(dup, "None found, no duplicates in this batch.");
+    }
+    similarPairs.forEach(([a, b, sim, inliers]) => {
+      dup.appendChild(card(
+        `<span class="names"><span class="file">${esc(filename(a))}</span> and <span class="file">${esc(filename(b))}</span></span>` +
+        `<span class="chip bad">Edited copy</span>`,
+        "The same photo after a crop, mirror, or color change. Pick one and remove the other.",
+        editedCopyDetail(sim, inliers),
+        [a, b]
+      ));
+    });
+    if (!dupCount) renderEmpty(dup, "None found, no duplicates in this batch.");
 
     if (blurryImages.length) {
       blurryImages.forEach(([p, sharpness]) => {
         blur.appendChild(card(
           `<span class="names file">${esc(filename(p))}</span><span class="chip bad">Too blurry</span>`,
           null,
-          `Laplacian variance: ${Number(sharpness).toFixed(1)} (lower = blurrier, flagged if ≤ 200)`
+          `Laplacian variance: ${Number(sharpness).toFixed(1)} (lower = blurrier, flagged if ≤ 200)`,
+          [p]
         ));
       });
     } else renderEmpty(blur, "None found, every photo is sharp enough to use.");
@@ -322,20 +469,34 @@
     if (exifImages.length) {
       exifImages.forEach(([p, orientation, swapsDims]) => {
         exif.appendChild(card(
-          `<span class="names file">${esc(filename(p))}</span>` +
-          (swapsDims ? `<span class="chip bad">Bounding box risk</span>` : `<span class="chip bad">Rotation flagged</span>`),
-          swapsDims ? "This rotation also flips width and height, high risk of misplaced bounding boxes." : null,
-          `EXIF orientation tag: ${esc(orientation)} (${ORIENTATION_NAMES[orientation] || "unknown"}) — flagged because it isn't 1 (normal)`
+          `<span class="names file">${esc(filename(p))}</span><span class="chip bad">Check labels</span>`,
+          swapsDims
+            ? "Displays turned 90°, which swaps width and height. Boxes drawn on the unrotated photo would land in the wrong place."
+            : "Displays flipped or turned 180°. Boxes drawn on the original photo would be mirrored.",
+          `EXIF orientation tag: ${esc(orientation)} (${ORIENTATION_NAMES[orientation] || "unknown"}) — flagged because it isn't 1 (normal)`,
+          [p]
         ));
       });
     } else renderEmpty(exif, "None found, no rotation conflicts.");
 
-    if (decisions.length) {
-      decisions.forEach(d => {
-        const remove = d.action === "quarantine";
+    if (data.agent_error) {
+      renderEmpty(dec, "The AI review didn't run for this scan, so there are no recommendations. The checks above are still accurate.");
+    } else if (decisions.length) {
+      if (data.agent_truncated) {
+        renderEmpty(dec, "This batch had a lot of issues, so Claude reviewed the first 30.");
+      }
+      decisions.forEach((d, i) => {
+        const remove = actionFor(d) === "quarantine";
+        const toggle = localFiles.size
+          ? `<button class="toggle" type="button" data-decision="${i}">${remove ? "Keep instead" : "Remove instead"}</button>`
+          : "";
         dec.appendChild(card(
-          `<span class="names file">${esc(filename(d.file))}</span><span class="chip ${remove ? "bad" : "good"}">${remove ? "Remove" : "Keep"}</span>`,
-          d.reason ? esc(cleanNames(d.reason)) : null
+          `<span class="names file">${esc(filename(d.file))}</span>` +
+          `<span class="chip ${remove ? "bad" : "good"}">${remove ? "Remove" : "Keep"}${overrides.has(d.file) ? " (your call)" : ""}</span>` +
+          toggle,
+          d.reason ? esc(cleanNames(d.reason)) : null,
+          null,
+          [d.file]
         ));
       });
     } else renderEmpty(dec, "No recommendations, nothing needed a decision.");
@@ -348,6 +509,118 @@
         ));
       });
     } else renderEmpty(unreadable, "None, every file opened fine.");
+
+    updateDownloadBar();
+  }
+
+  function removedKeys() {
+    return new Set((currentData?.agent_decisions || [])
+      .filter(d => actionFor(d) === "quarantine")
+      .map(d => fileKey(d.file)));
+  }
+
+  function updateDownloadBar() {
+    const bar = document.getElementById("download-bar");
+    bar.hidden = !localFiles.size || !currentData;
+    if (bar.hidden) return;
+    const removed = removedKeys();
+    const dropped = [...localFiles.keys()].filter(k => removed.has(k)).length;
+    document.getElementById("download-note").textContent =
+      `All ${plural(localFiles.size, "photo")} except the ${dropped} marked Remove. Change any decision below first if you disagree.`;
+  }
+
+  function resetLocalFiles() {
+    previewUrls.forEach(url => URL.revokeObjectURL(url));
+    previewUrls.clear();
+    localFiles.clear();
+    overrides.clear();
+  }
+
+  function loadJsZip() {
+    if (window.JSZip) return Promise.resolve(window.JSZip);
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      script.integrity = "sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG";
+      script.crossOrigin = "anonymous";
+      script.onload = () => resolve(window.JSZip);
+      script.onerror = () => reject(new Error("Couldn't load the zip library, check your connection."));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function downloadCleaned() {
+    const zip = new (await loadJsZip())();
+    const removed = removedKeys();
+    const used = new Set();
+    for (const [key, file] of localFiles) {
+      if (removed.has(key)) continue;
+      const [folder, index] = key.split("/");
+      const dir = folder === "test" ? "test" : "train";
+      let name = `${dir}/${file.name}`;
+      if (used.has(name)) name = `${dir}/${index}_${file.name}`;
+      used.add(name);
+      zip.file(name, file);
+    }
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(await zip.generateAsync({ type: "blob" }));
+    link.download = "winnow-cleaned-photos.zip";
+    link.click();
+  }
+
+  // Deterministic generated photos, so the example set needs no hosting and has no licensing questions.
+  function seeded(seed) {
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function examplePhoto(seed, { mirror = false, zoom = false, blur = false } = {}) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 480;
+    canvas.height = 360;
+    const g = canvas.getContext("2d");
+    const rand = seeded(seed);
+    if (blur) g.filter = "blur(4px)";
+    if (mirror) { g.translate(480, 0); g.scale(-1, 1); }
+    if (zoom) { g.translate(-60, -45); g.scale(1.25, 1.25); }
+    const hue = Math.floor(rand() * 360);
+    const sky = g.createLinearGradient(0, 0, 0, 360);
+    sky.addColorStop(0, `hsl(${hue}, 55%, 62%)`);
+    sky.addColorStop(1, `hsl(${(hue + 50) % 360}, 45%, 85%)`);
+    g.fillStyle = sky;
+    g.fillRect(0, 0, 480, 360);
+    for (let i = 0; i < 140; i++) {
+      g.fillStyle = `hsl(${Math.floor(rand() * 360)}, ${40 + rand() * 45}%, ${20 + rand() * 60}%)`;
+      const x = rand() * 480, y = rand() * 360, size = 6 + rand() * 40;
+      if (rand() < 0.5) {
+        g.fillRect(x, y, size, size * (0.4 + rand()));
+      } else {
+        g.beginPath();
+        g.arc(x, y, size / 2, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    return new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  }
+
+  const EXAMPLES = {
+    train: [
+      ["park.png", 11, {}], ["park_copy.png", 11, {}], ["park_flipped.png", 11, { mirror: true }],
+      ["market.png", 22, {}], ["market_shaky.png", 22, { blur: true }], ["harbor.png", 33, {}],
+    ],
+    test: [["test_harbor_zoomed.png", 33, { zoom: true }], ["test_garden.png", 44, {}]],
+  };
+
+  async function exampleFiles(list) {
+    const transfer = new DataTransfer();
+    for (const [name, seed, options] of list) {
+      transfer.items.add(new File([await examplePhoto(seed, options)], name, { type: "image/png" }));
+    }
+    return transfer.files;
   }
 
   function loadExample() {
@@ -366,9 +639,12 @@
       });
   }
 
-  function validate(files) {
-    if (!files.length) return "Pick some photos first.";
-    if (files.length > MAX_FILES) return `Pick at most ${MAX_FILES} photos.`;
+  function validate(train, test) {
+    const files = [...train, ...test];
+    if (!train.length) {
+      return test.length ? "Add training photos too, your test photos get compared against them." : "Pick some photos first.";
+    }
+    if (files.length > MAX_FILES) return `Pick at most ${MAX_FILES} photos in total.`;
     const wrongType = files.find(f => !ALLOWED_TYPES.includes(f.type));
     if (wrongType) return `${wrongType.name} isn't a JPEG or PNG.`;
     const tooBig = files.find(f => f.size > MAX_BYTES);
@@ -377,11 +653,13 @@
   }
 
   function showPicked() {
-    const files = [...fileInput.files];
-    const problem = files.length ? validate(files) : null;
-    document.getElementById("picked").textContent = files.length ? plural(files.length, "photo") + " selected" : "";
+    const train = [...fileInput.files];
+    const test = [...testInput.files];
+    const problem = train.length || test.length ? validate(train, test) : null;
+    document.getElementById("picked").textContent = train.length ? plural(train.length, "photo") + " selected" : "";
+    document.getElementById("test-picked").textContent = test.length ? plural(test.length, "test photo") + " selected" : "";
     uploadStatus.textContent = problem || "";
-    scanBtn.disabled = !files.length || Boolean(problem);
+    scanBtn.disabled = !train.length || Boolean(problem);
   }
 
   async function api(path, body) {
@@ -424,34 +702,50 @@
     if (data.error) throw new Error("The scan failed. Try again, or try different photos.");
     render(data);
     uploadStatus.textContent = "Done. Bookmark or share this page's link to come back to these results.";
+    if (!localFiles.size) {
+      statusEl.textContent = "Photo previews and the cleaned download only work right after a scan, in the tab you scanned from.";
+    }
   }
 
-  fileInput.addEventListener("change", showPicked);
-  ["dragenter", "dragover"].forEach(type => dropzone.addEventListener(type, e => {
-    e.preventDefault();
-    dropzone.classList.add("over");
-  }));
-  ["dragleave", "drop"].forEach(type => dropzone.addEventListener(type, e => {
-    e.preventDefault();
-    dropzone.classList.remove("over");
-  }));
-  dropzone.addEventListener("drop", e => {
-    fileInput.files = e.dataTransfer.files;
-    showPicked();
+  [["dropzone", fileInput], ["test-dropzone", testInput]].forEach(([id, input]) => {
+    const zone = document.getElementById(id);
+    input.addEventListener("change", showPicked);
+    ["dragenter", "dragover"].forEach(type => zone.addEventListener(type, e => {
+      e.preventDefault();
+      zone.classList.add("over");
+    }));
+    ["dragleave", "drop"].forEach(type => zone.addEventListener(type, e => {
+      e.preventDefault();
+      zone.classList.remove("over");
+    }));
+    zone.addEventListener("drop", e => {
+      input.files = e.dataTransfer.files;
+      showPicked();
+    });
   });
 
   scanBtn.addEventListener("click", async () => {
-    const files = [...fileInput.files];
-    const problem = validate(files);
+    const train = [...fileInput.files];
+    const test = [...testInput.files];
+    const problem = validate(train, test);
     if (problem) {
       uploadStatus.textContent = problem;
       return;
     }
+    const files = [...train, ...test];
     scanBtn.disabled = true;
     try {
       uploadStatus.textContent = `Uploading ${plural(files.length, "photo")}…`;
       const { session, uploads } = await api("/upload-urls", {
-        files: files.map(f => ({ name: f.name, type: f.type })),
+        files: [
+          ...train.map(f => ({ name: f.name, type: f.type, split: "train" })),
+          ...test.map(f => ({ name: f.name, type: f.type, split: "test" })),
+        ],
+      });
+      resetLocalFiles();
+      uploads.forEach((target, i) => {
+        const [, , folder, index] = target.fields.key.split("/");
+        localFiles.set(`${folder}/${index}`, files[i]);
       });
       await Promise.all(uploads.map((target, i) => uploadFile(target, files[i])));
       await api("/scan", { session });
@@ -462,6 +756,38 @@
     } finally {
       scanBtn.disabled = false;
     }
+  });
+
+  const lightbox = document.getElementById("lightbox");
+  document.addEventListener("click", e => {
+    const thumb = e.target.closest(".thumb");
+    if (thumb) {
+      document.getElementById("lightbox-img").src = thumb.src;
+      document.getElementById("lightbox-name").textContent = thumb.dataset.name;
+      lightbox.hidden = false;
+      return;
+    }
+    const toggle = e.target.closest("[data-decision]");
+    if (toggle && currentData) {
+      const d = currentData.agent_decisions[Number(toggle.dataset.decision)];
+      overrides.set(d.file, actionFor(d) === "quarantine" ? "keep" : "quarantine");
+      render(currentData);
+    }
+  });
+  lightbox.addEventListener("click", () => { lightbox.hidden = true; });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") lightbox.hidden = true;
+  });
+
+  document.getElementById("download-btn").addEventListener("click", () => {
+    downloadCleaned().catch(err => { document.getElementById("download-note").textContent = err.message; });
+  });
+
+  document.getElementById("example-btn").addEventListener("click", async () => {
+    fileInput.files = await exampleFiles(EXAMPLES.train);
+    testInput.files = await exampleFiles(EXAMPLES.test);
+    showPicked();
+    uploadStatus.textContent = "Loaded 8 generated example photos with a few planted problems. Press Scan to check them.";
   });
 
   const sessionParam = new URLSearchParams(location.search).get("session");
