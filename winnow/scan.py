@@ -2,9 +2,26 @@ import os
 import sys
 
 from blur import compute_sharpness, is_too_blurry
+from bursts import find_bursts
 from duplicates import find_duplicate_pairs, find_leaked_pairs
 from exif_conflict import get_orientation, has_risky_orientation, swaps_dimensions
+from labels import check_labels
+from overlay import find_overlays
+from provenance import find_provenance_flags
 from semantic import compute_embeddings, confirm_hash_pairs, find_semantic_leaks, find_semantic_pairs
+from shift import check_shift
+
+LABEL_EXTENSIONS = (".txt", ".xml", ".json")
+
+
+def _advisory(check, fallback, *args):
+    """Runs one of the report-only checks. They read visitors' metadata and label files, so if one
+    fails, the scan still returns everything else."""
+    try:
+        return check(*args)
+    except Exception as e:
+        print(f"{check.__name__} failed: {type(e).__name__}: {e}")
+        return fallback
 
 
 def list_images(folder_path):
@@ -15,7 +32,15 @@ def list_images(folder_path):
     ]
 
 
-def scan_folder(folder_path, test_folder_path=None):
+def list_label_files(folder_path):
+    return [
+        os.path.join(folder_path, name)
+        for name in os.listdir(folder_path)
+        if name.lower().endswith(LABEL_EXTENSIONS)
+    ]
+
+
+def scan_folder(folder_path, test_folder_path=None, label_folder_path=None):
     image_paths = list_images(folder_path)
 
     blurry_images = []
@@ -46,16 +71,28 @@ def scan_folder(folder_path, test_folder_path=None):
         "unreadable_images": unreadable_images,
     }
 
+    test_paths, test_embeddings = [], {}
     if test_folder_path:
         try:
             test_paths = list_images(test_folder_path)
         except OSError as e:
             unreadable_images.append((test_folder_path, str(e)))
-            test_paths = []
         test_embeddings = compute_embeddings(test_paths)
         result["leaked_pairs"] = confirm_hash_pairs(
             find_leaked_pairs(readable_paths, test_paths), {**embeddings, **test_embeddings})
         result["similar_leaks"] = find_semantic_leaks(embeddings, test_embeddings, result["leaked_pairs"])
+        result["shift"] = _advisory(check_shift, None, embeddings, test_embeddings)
+
+    # The checks below only report; none of them removes anything.
+    every_photo = readable_paths + list(test_embeddings)
+    matched = [p for key in ("duplicate_pairs", "similar_pairs", "leaked_pairs", "similar_leaks") for p in result.get(key, [])]
+    result["bursts"] = _advisory(find_bursts, [], readable_paths, test_paths, matched)
+    result["overlays"] = _advisory(find_overlays, [], every_photo)
+    result["ai_generated_images"], result["stock_images"] = _advisory(find_provenance_flags, ([], []), every_photo)
+    if label_folder_path:
+        result["label_problems"] = _advisory(
+            lambda: check_labels(every_photo, list_label_files(label_folder_path)),
+            [(label_folder_path, "unreadable", "the label check failed on these files")])
 
     return result
 
@@ -66,3 +103,7 @@ if __name__ == "__main__":
     print("Blurry images:            ", result["blurry_images"])
     print("Risky EXIF orientation:   ", result["risky_orientation_images"])
     print("Unreadable images:        ", result["unreadable_images"])
+    print("Same-moment groups:       ", result["bursts"])
+    print("Shared overlays:          ", result["overlays"])
+    print("AI-generated markers:     ", result["ai_generated_images"])
+    print("Stock-agency markers:     ", result["stock_images"])

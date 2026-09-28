@@ -4,11 +4,20 @@ import sys
 import cv2
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import Image, PngImagePlugin
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "api"))
+
+
+IPTC_AI = (b'<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+           b'<rdf:Description xmlns:Iptc4xmpExt="http://iptc.org/std/Iptc4xmpExt/2008-02-29/" '
+           b'Iptc4xmpExt:DigitalSourceType="http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"/>'
+           b'</rdf:RDF></x:xmpmeta>')
+GETTY = (b'<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+         b'<rdf:Description xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/" photoshop:Credit="Getty Images"/>'
+         b'</rdf:RDF></x:xmpmeta>')
 
 
 def scene(seed, height=360, width=480):
@@ -66,6 +75,42 @@ def jpeg_with_orientation(path, orientation, seed=8):
     exif[274] = orientation
     Image.fromarray(scene(seed)[:, :, ::-1]).save(path, exif=exif)
     return path
+
+
+def jpeg_with_capture(path, camera, taken, fraction="", seed=8):
+    """A photo whose EXIF records the camera and when it was taken ("2024:05:01 10:00:07")."""
+    exif = Image.Exif()
+    exif[271], exif[272] = camera.split(" ", 1)
+    exif.get_ifd(0x8769)[36867] = taken
+    if fraction:
+        exif.get_ifd(0x8769)[37521] = fraction
+    Image.fromarray(scene(seed)[:, :, ::-1]).save(path, exif=exif)
+    return path
+
+
+def photo_with_metadata(path, seed=8, text=None, xmp=None):
+    """A photo carrying a PNG text chunk (`text` = (key, value)) or a JPEG XMP packet."""
+    image = Image.fromarray(scene(seed)[:, :, ::-1])
+    if text:
+        info = PngImagePlugin.PngInfo()
+        info.add_text(*text)
+        image.save(path, pnginfo=info)
+    elif xmp:
+        image.save(path, xmp=xmp)
+    else:
+        image.save(path)
+    return path
+
+
+def stamp(image, alpha=0.5):
+    """A semi-transparent white label in the bottom-right corner, like a stock-photo watermark."""
+    height, width = image.shape[:2]
+    mask = np.zeros((height, width), np.uint8)
+    scale = width / 300
+    cv2.putText(mask, "STOCKPHOTO", (width - int(width * 0.42), height - height // 12),
+                cv2.FONT_HERSHEY_SIMPLEX, scale, 255, max(1, round(scale * 2)))
+    weight = (mask / 255.0 * alpha)[..., None]
+    return (image * (1 - weight) + 255 * weight).astype(np.uint8)
 
 
 @pytest.fixture

@@ -81,6 +81,29 @@ def test_upload_links_are_scoped_to_one_new_session(aws):
     assert {"Content-Type": "image/png"} in train["conditions"]
 
 
+def test_label_files_get_their_own_folder_and_a_smaller_size_cap(aws):
+    labels = [photo("a.txt", "text/plain", "labels"), photo("b.xml", "application/xml", "labels"),
+              photo("coco", "application/json", "labels")]
+    status, body = call("/upload-urls", {"files": [photo(), *labels]})
+    assert status == 200
+    keys = [u["fields"]["key"] for u in body["uploads"]]
+    assert [k.split("/", 2)[2] for k in keys] == ["images/0/a.png", "labels/1/a.txt", "labels/2/b.xml", "labels/3/coco.json"]
+    assert ["content-length-range", 1, app.MAX_LABEL_BYTES] in body["uploads"][1]["conditions"]
+    assert ["content-length-range", 1, app.MAX_BYTES] in body["uploads"][0]["conditions"]
+
+
+def test_label_and_photo_limits_are_counted_separately(aws):
+    label = photo("a.txt", "text/plain", "labels")
+    assert call("/upload-urls", {"files": [photo()] * app.MAX_FILES + [label] * app.MAX_LABEL_FILES})[0] == 200
+    assert call("/upload-urls", {"files": [photo()] + [label] * (app.MAX_LABEL_FILES + 1)})[0] == 400
+    assert call("/upload-urls", {"files": [label]})[0] == 400
+
+
+def test_photo_types_are_not_accepted_as_labels_or_the_reverse(aws):
+    assert call("/upload-urls", {"files": [photo(), photo("a.png", "image/png", "labels")]})[0] == 400
+    assert call("/upload-urls", {"files": [photo("a.txt", "text/plain")]})[0] == 400
+
+
 def test_hostile_filenames_cannot_escape_the_session_folder(aws):
     _, body = call("/upload-urls", {"files": [photo("../../<script>.png"), photo("noextension", "image/jpeg")]})
     keys = [u["fields"]["key"] for u in body["uploads"]]

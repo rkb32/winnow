@@ -38,7 +38,7 @@ def upload_results(bucket, result, session=None):
     return key
 
 
-def run(bucket, prefix, test_prefix, quarantine_prefix):
+def run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix=None):
     with tempfile.TemporaryDirectory() as tmp_dir:
         key_by_local_path = download_bucket_prefix(bucket, prefix, tmp_dir)
 
@@ -51,7 +51,14 @@ def run(bucket, prefix, test_prefix, quarantine_prefix):
             if not test_keys:
                 test_dir = None
 
-        result = scan_folder(tmp_dir, test_folder_path=test_dir)
+        labels_dir = None
+        if labels_prefix:
+            labels_dir = os.path.join(tmp_dir, "_labels")
+            os.makedirs(labels_dir)
+            if not download_bucket_prefix(bucket, labels_prefix, labels_dir):
+                labels_dir = None
+
+        result = scan_folder(tmp_dir, test_folder_path=test_dir, label_folder_path=labels_dir)
 
         # Inside the with-block: the agent may look at and zoom into the downloaded originals.
         combined = dict(result)
@@ -75,13 +82,15 @@ if __name__ == "__main__":
         prefix = f"uploads/{session}/images/"
         test_prefix = f"uploads/{session}/test/"
         quarantine_prefix = f"uploads/{session}/quarantine/"
+        labels_prefix = f"uploads/{session}/labels/"
     else:
         prefix = os.environ.get("WINNOW_PREFIX", "")
         test_prefix = os.environ.get("WINNOW_TEST_PREFIX")
         quarantine_prefix = "quarantine/"
+        labels_prefix = os.environ.get("WINNOW_LABELS_PREFIX")
 
     try:
-        combined = run(bucket, prefix, test_prefix, quarantine_prefix)
+        combined = run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix)
     except Exception:
         # Without this, a visitor's page would poll for a result that never arrives.
         if session:

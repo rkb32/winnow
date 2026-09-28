@@ -15,10 +15,14 @@ SECURITY_GROUP = os.environ["WINNOW_SECURITY_GROUP"]
 
 MAX_FILES = 20
 MAX_BYTES = 5 * 1024 * 1024
+# One label file per photo (YOLO, Pascal VOC) or a single COCO file for all of them.
+MAX_LABEL_FILES = 20
+MAX_LABEL_BYTES = 1024 * 1024
 MAX_RUNNING_SCANS = 3
 DAILY_SCAN_LIMIT = 15
 EXTENSION_BY_TYPE = {"image/jpeg": ".jpg", "image/png": ".png"}
-FOLDER_BY_SPLIT = {"train": "images", "test": "test"}
+LABEL_EXTENSION_BY_TYPE = {"text/plain": ".txt", "application/xml": ".xml", "application/json": ".json"}
+FOLDER_BY_SPLIT = {"train": "images", "test": "test", "labels": "labels"}
 SESSION_RE = re.compile(r"^[0-9a-f]{32}$")
 
 s3 = boto3.client("s3")
@@ -35,24 +39,35 @@ def respond(status, body):
 
 def safe_name(name, content_type):
     cleaned = re.sub(r"[^A-Za-z0-9.-]+", "_", name).strip("._")[:80] or "photo"
-    if not cleaned.lower().endswith((".jpg", ".jpeg", ".png")):
-        cleaned += EXTENSION_BY_TYPE[content_type]
+    if content_type in EXTENSION_BY_TYPE:
+        if not cleaned.lower().endswith((".jpg", ".jpeg", ".png")):
+            cleaned += EXTENSION_BY_TYPE[content_type]
+    elif not cleaned.lower().endswith(LABEL_EXTENSION_BY_TYPE[content_type]):
+        cleaned += LABEL_EXTENSION_BY_TYPE[content_type]
     return cleaned
 
 
 def create_upload_urls(body):
     files = body.get("files")
-    if not isinstance(files, list) or not 1 <= len(files) <= MAX_FILES:
-        return respond(400, {"error": f"Pick between 1 and {MAX_FILES} photos."})
+    photo_error = respond(400, {"error": f"Pick between 1 and {MAX_FILES} photos."})
+    if not isinstance(files, list) or not 1 <= len(files) <= MAX_FILES + MAX_LABEL_FILES:
+        return photo_error
+    if not all(isinstance(f, dict) for f in files):
+        return respond(400, {"error": "Invalid file list."})
+    labels = sum(f.get("split") == "labels" for f in files)
+    if not 1 <= len(files) - labels <= MAX_FILES:
+        return photo_error
+    if labels > MAX_LABEL_FILES:
+        return respond(400, {"error": f"Pick at most {MAX_LABEL_FILES} label files."})
 
     session = uuid.uuid4().hex
     uploads = []
     for i, f in enumerate(files):
-        if not isinstance(f, dict):
-            return respond(400, {"error": "Invalid file list."})
+        is_label = f.get("split") == "labels"
         content_type = f.get("type")
-        if content_type not in EXTENSION_BY_TYPE:
-            return respond(400, {"error": "Only JPEG and PNG photos are supported."})
+        if content_type not in (LABEL_EXTENSION_BY_TYPE if is_label else EXTENSION_BY_TYPE):
+            return respond(400, {"error": "Label files must be .txt, .xml or .json." if is_label
+                                 else "Only JPEG and PNG photos are supported."})
         folder = FOLDER_BY_SPLIT.get(f.get("split", "train"))
         if folder is None:
             return respond(400, {"error": "Invalid split."})
@@ -61,7 +76,8 @@ def create_upload_urls(body):
             BUCKET,
             key,
             Fields={"Content-Type": content_type},
-            Conditions=[{"Content-Type": content_type}, ["content-length-range", 1, MAX_BYTES]],
+            Conditions=[{"Content-Type": content_type},
+                        ["content-length-range", 1, MAX_LABEL_BYTES if is_label else MAX_BYTES]],
             ExpiresIn=600,
         ))
     return respond(200, {"session": session, "uploads": uploads})

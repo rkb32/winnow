@@ -12,7 +12,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 WORKDIR /app
 COPY --from=model /models/embedder.onnx /app/models/embedder.onnx
-COPY duplicates.py blur.py exif_conflict.py semantic.py zoom.py scan.py s3_scan.py agent.py /app/
+COPY duplicates.py blur.py exif_conflict.py semantic.py zoom.py scan.py s3_scan.py agent.py provenance.py bursts.py shift.py overlay.py labels.py /app/
 
 # docker build --target test . runs the suite against the exact runtime image.
 FROM base AS test
