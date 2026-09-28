@@ -267,6 +267,11 @@
   <div class="headline" id="headline" hidden></div>
   <p class="agent-note" id="agent-note" hidden></p>
 
+  <div class="download" id="save-bar" hidden>
+    <button class="toggle" id="copy-link-btn" type="button">Copy link to save these results</button>
+    <span class="sub" id="copy-link-note"></span>
+  </div>
+
   <div class="download" id="download-bar" hidden>
     <button id="download-btn" type="button">Download cleaned photos</button>
     <span class="sub" id="download-note"></span>
@@ -300,7 +305,7 @@
     <div id="exif"></div>
   </section>
 
-  <section>
+  <section id="unreadable-section" hidden>
     <h2>Couldn't Be Scanned</h2>
     <p class="h2-sub">Files that failed to open, likely corrupted or not actually images.</p>
     <p class="fix" id="unreadable-fix" hidden><b>Fix:</b> re-export or re-download these files, a model can't learn from them.</p>
@@ -421,6 +426,8 @@
     const headline = document.getElementById("headline");
     headline.hidden = false;
     headline.textContent = message;
+    document.getElementById("save-bar").hidden = false;
+    document.getElementById("copy-link-note").textContent = "";
     document.getElementById("agent-note").hidden = true;
     containers.forEach(c => { c.innerHTML = ""; });
     leakContainer.innerHTML = "";
@@ -462,6 +469,9 @@
     document.getElementById("blurry-fix").hidden = !blurryImages.length;
     document.getElementById("exif-fix").hidden = !exifImages.length;
     document.getElementById("unreadable-fix").hidden = !unreadableImages.length;
+    // Unlike the other sections, "couldn't be scanned" is an edge case, not a feature to
+    // advertise up front, so hide the whole section until a scan actually finds one.
+    document.getElementById("unreadable-section").hidden = !unreadableImages.length;
 
     document.getElementById("headline").innerHTML = totalIssues === 0
       ? `<b>Looks clean.</b> No leaks, duplicates, blur, or rotation problems found.`
@@ -869,6 +879,16 @@
 
   document.getElementById("download-btn").addEventListener("click", () => {
     downloadCleaned().catch(err => { document.getElementById("download-note").textContent = err.message; });
+  });
+
+  document.getElementById("copy-link-btn").addEventListener("click", async () => {
+    const note = document.getElementById("copy-link-note");
+    try {
+      await navigator.clipboard.writeText(location.href);
+      note.textContent = "Copied. This link works for 30 days.";
+    } catch {
+      note.textContent = "Couldn't copy automatically, copy the address bar instead.";
+    }
   });
 
   document.getElementById("example-btn").addEventListener("click", async () => {
