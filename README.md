@@ -2,7 +2,7 @@
 
 A data-quality auditor for computer vision training datasets. Built for the [OpenCV AI Competition 2026](https://opencv26.devpost.com/) (OpenCV 5 + AWS).
 
-Point it at a folder of training images and it flags the things that quietly corrupt a model before anyone notices: near-duplicate photos, images duplicated across train/test splits (leakage), blurry images, and EXIF orientation tags that don't match how an image actually displays (which shifts bounding boxes without warning). It never stores or forwards the images themselves, everything runs read-in-place.
+Point it at a folder of training images and it flags the things that quietly corrupt a model before anyone notices: near-duplicate photos, images duplicated across train/test splits (leakage), a test set that looks nothing like the training set, photos taken seconds apart on both sides of a split, blurry images, a watermark or frame shared across the set, photos whose files say they are AI-generated or from a stock agency, label mistakes, and EXIF orientation tags that don't match how an image actually displays (which shifts bounding boxes without warning). It never stores or forwards the images themselves, everything runs read-in-place.
 
 **Try it:** https://d1oc3ay9n04ubj.cloudfront.net/ — upload up to 20 photos and get a report in about a minute, no install or account needed.
 
@@ -14,11 +14,18 @@ Point it at a folder of training images and it flags the things that quietly cor
 | Exact and compressed copies | Perceptual hash (`cv2.img_hash.BlockMeanHash`), distance ≤ 5, confirmed by ≥ 8 shared SIFT keypoints or ≥ 0.85 embedding similarity | Duplicates overweight some examples and hide leaks. The confirmation exists because raw hashes collide on low-texture photos (see the full audit below) |
 | Edited copies (crops, mirrors, recolors) | Two stages: MobileNetV2 embeddings through OpenCV 5's `cv2.dnn` nominate look-alikes (cosine ≥ 0.80), then SIFT keypoints + RANSAC confirm ≥ 25 points agree on one geometric transform | The perceptual hash catches 0% of cropped or mirrored copies (see Evaluation). Embeddings alone flag different photos of the same kind of thing; the geometric check is what tells "same photo" from "same subject" |
 | Blurry images | Laplacian variance ≤ 200 | Out-of-focus images add noise instead of signal |
-| Risky EXIF orientation | Orientation tag ≠ 1 (normal) | Labels drawn on the unrotated photo may no longer line up. Winnow flags the risk; it doesn't read label files |
+| Risky EXIF orientation | Orientation tag ≠ 1 (normal) | Labels drawn on the unrotated photo may no longer line up. Winnow flags the risk, and with label files it confirms it (see label problems below) |
+| Train/test shift | The two sets' mean MobileNetV2 embeddings, compared by squared distance. The p-value comes from shuffling which photos count as test 2,000 times; flagged at p ≤ 0.05, needs ≥ 5 photos in each set | A test set drawn from a different kind of picture gives a score that says little about real use, even with no duplicate anywhere |
+| Same-moment shots | EXIF camera and capture time: photos within 3 seconds of each other on one camera | Pixels can't see that two different-looking frames are one moment, and a moment split across train and test is a leak |
+| Shared watermarks and frames | Gradient signs at 192 px: an edge that keeps the same sign at the same pixels in ≥ 7 photos and ≥ 70% of a group of ≥ 8 same-shaped photos | A model can learn a shared logo or template instead of the subject, and a scrape from one stock site carries one |
+| Stock-agency credits and AI-generation markers | Read from each file's own metadata (IPTC digital source type, Stable Diffusion and ComfyUI settings, agency names). Nothing is guessed from pixels | Stock licenses often forbid training, and generated images skew a "real photo" set. A photo with no marker proves nothing, because social media strips metadata |
+| Label problems | YOLO, Pascal VOC or COCO files checked against the photos: boxes outside the photo, with no area, or repeated; sizes that contradict the photo; label files with no photo; photos with no label | Bad boxes train a model on noise, and a label size that contradicts the photo confirms the rotation problem above |
 
 **A fixed camera's background doesn't count as a match.** A camera that never moves (a conveyor, a curb, CCTV) repeats its background pixel for pixel, which alone gives two frames 150+ SIFT inliers and near-identical embeddings even when the subject in front of it changed. So when two photos line up with zero shift, Winnow diffs them and only counts keypoints inside the region that differs (`_content_match` in `winnow/semantic.py`), for both the hash and the embedding check. A different part on the same conveyor stops matching; the same part a few pixels later still does. An outside CV engineer spotted this gap from reading the repo.
 
-Claude (Haiku 4.5 on Bedrock) then reviews every finding and decides what to quarantine, answering through a forced tool call so its output always matches a fixed schema.
+**The five newest checks only report.** Train/test shift, same-moment shots, shared watermarks, stock and AI markers, and label problems never remove a photo, never go to Claude, and never change the cleaned download. Claude's pipeline was measured on duplicate and leak findings, and more findings in its prompt would put that at risk (past 8 findings the visual review below switches off). So these show up as their own sections on the site, and each one carries its measured limits below.
+
+Claude (Haiku 4.5 on Bedrock) then reviews every duplicate, leak, blur and rotation finding and decides what to quarantine, answering through a forced tool call so its output always matches a fixed schema.
 
 **For borderline pairs, Claude looks before it decides.** When an edited-copy match sits where the detector's own numbers can't separate real copies from false ones (under 35 inliers, or keypoints covering under a quarter of a photo), Claude gets both photos plus two OpenCV tools: a thumbnail, and a full-resolution zoom into any region it picks (`winnow/zoom.py`). It answers one question per pair, same or different, and code applies the removal rule. Claude can **dispute** a flag but never clear one: a disputed photo stays removed unless you click Keep, with Claude's reason and the regions it zoomed into shown on the card. The zoomed regions are stored as coordinates, never pixels, and your browser redraws them from your own copy of the photo.
 
@@ -28,7 +35,7 @@ Claude (Haiku 4.5 on Bedrock) then reviews every finding and decides what to qua
 
 Two ways in, one pipeline: an operator with AWS access drops photos in `samples/` and EventBridge triggers a scan (Path A), or anyone uses the public site, which hands out presigned S3 upload links and starts a scoped scan through a Lambda Function URL (Path B). Both land in the same ECS Fargate task — detectors, then the Claude agent, then results in S3 — and both are read back through the same read-only CloudFront-served dashboard.
 
-Uploaded photos are never readable publicly (CloudFront can only read `dashboard.html` and `results/`), and S3 lifecycle rules delete uploads after 1 day and reports after 7. An empty per-scan marker (date and random session id, nothing else) is kept 90 days to count usage.
+Uploaded photos and label files are never readable publicly (CloudFront can only read `dashboard.html` and `results/`), and S3 lifecycle rules delete uploads after 1 day and reports after 30. An empty per-scan marker (date and random session id, nothing else) is kept 90 days to count usage.
 
 IAM is split into three roles by who needs what: an execution role (lets ECS pull the image and ship logs), a task role (lets the running code read/write S3 and call Bedrock, scoped to one bucket), and an EventBridge invocation role (lets the trigger call `ecs:RunTask`). No role does more than one job.
 
@@ -58,7 +65,7 @@ For the bulk S3 path, upload your photos to `samples/`, then upload an empty `sa
 docker build --target test winnow/
 ```
 
-Runs 66 tests inside the exact runtime image (same OpenCV 5 build, same embedding model): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id mapping, cut-off replies, the findings cap), the visual review loop (per-pair zoom budgets, the forced final decision, bad zoom requests bounced back to the model, the rule that Claude can dispute but not clear a flag), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps). Production builds skip this stage, so the deployed image carries no test code. To check the tests can actually fail, three deliberate bugs were introduced (a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap), and the suite caught each one.
+Runs 112 tests inside the exact runtime image (same OpenCV 5 build, same embedding model): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id mapping, cut-off replies, the findings cap), the visual review loop (per-pair zoom budgets, the forced final decision, bad zoom requests bounced back to the model, the rule that Claude can dispute but not clear a flag), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps, label-file limits). Production builds skip this stage, so the deployed image carries no test code. To check the tests can actually fail, deliberate bugs were introduced one at a time (a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap, then seventeen more across the newer checks), and the suite caught each one.
 
 Dependencies are pinned in `winnow/requirements.txt`, and the embedding model is downloaded at build time with a checksum check (`ADD --checksum`) then trimmed by `winnow/models/make_embedder.py`.
 
@@ -99,12 +106,45 @@ Version 1 was worse than no review: it treated burst shots of the same moment as
 
 An earlier, smaller check (`run_experiment.py`): 10/10 planted exact leaks caught across 130 photos, 0 false positives.
 
+### The five newest checks, measured where the data allowed
+
+**Train/test shift** (`imagenette_exp/shift_eval.py`). Share of trials where the check fired, 300 trials per cell, sampled from Imagenette:
+
+| Test set vs train set | 15 train / 5 test | 10 / 10 | 100 / 30 |
+|---|---|---|---|
+| Same photos, random split (no shift) | 4% | 5% | 5% |
+| Test drawn from only 2 of 10 classes | 51% | 70% | 100% |
+| Same photos, test made darker | 11% | 18% | 95% |
+| Same photos, test made grayscale | 46% | 58% | 100% |
+| Same photos, test blurred | 97% | 100% | 100% |
+| Same photos, test at JPEG quality 8 | 25% | 49% | 100% |
+
+The first row is the false alarm rate, and it sits at the 5% the test is built to allow. At the website's size (up to 20 photos) the check reliably catches a large change such as blur or a different class mix, and often misses a mild one such as a darker test set.
+
+**Shared watermarks and frames** (`imagenette_exp/overlay_eval.py`). Groups of same-shaped Imagenette photos, 60 trials per cell, with a white "STOCKPHOTO" label blended in at the given opacity. With no overlay anywhere there were no false alarms at 8, 12 or 20 photos, in mixed-class and single-class groups alike (60 trials each). Share of trials where the overlay was found:
+
+| Overlay | Opacity | On | 8 photos | 12 | 20 |
+|---|---|---|---|---|---|
+| Corner logo | 15% | every photo | 0% | 7% | 3% |
+| Corner logo | 30% | every photo | 55% | 75% | 85% |
+| Corner logo | 30% | 80% of photos | 2% | 43% | 25% |
+| Corner logo | 50% | every photo | 87% | 98% | 95% |
+| Corner logo | 50% | 80% of photos | 17% | 83% | 82% |
+| Tiled diagonal | 30% | every photo | 65% | 83% | 72% |
+| Tiled diagonal | 50% | every photo | 100% | 100% | 100% |
+
+The thresholds trade sensitivity for silence: a clear watermark on every photo is found 87–100% of the time and a faint one (15%) is missed. On 80% of photos a small group misses it, because 7 photos must agree, and when it does fire on a partial set the group named an unmarked photo in at most 6% of detections at 12 and 20 photos (at 8 photos, every one of the few detections on a partial set did).
+
+**Stock and AI markers.** None of the 13,394 Imagenette photos carries an AI or stock-agency marker, so there are no false alarms to report; that dataset has no metadata to find, so this measures only the false alarm side. Detection is unit-tested with real formats: Stable Diffusion and ComfyUI PNG text, an IPTC digital source type in XMP, UTF-16 EXIF settings, and agency credits. It reads what a file declares and cannot see a marker that was stripped.
+
+**Same-moment shots and label problems are tested but not measured.** No photo in Imagenette has an EXIF capture time, and no public dataset with capture times and same-moment labels was at hand, so the 3-second gap is a judgment call rather than a calibrated threshold. The label checks are unit-tested on YOLO, Pascal VOC and COCO files with planted mistakes, and have not been run on a real labeled dataset.
+
 ## Repo layout
 
 - `winnow/` — the actual pipeline (detectors, S3 glue, Bedrock agent, Dockerfile, task definition, dashboard)
 - `winnow/api/` — the upload API Lambda and its one-time deploy script
 - `spike/` — the original dependency spike proving OpenCV 5 + `img_hash` work on ARM64 before building anything else
-- `imagenette_exp/` — the real-data evaluations: leak impact, hash vs. embedding comparison, keypoint-threshold calibration, the full audit, and the visual-review band and evaluation
+- `imagenette_exp/` — the real-data evaluations: leak impact, hash vs. embedding comparison, keypoint-threshold calibration, the full audit, the visual-review band and evaluation, and the train/test shift and shared-overlay calibrations
 - `proposal.md` / `Winnow-OpenCV-2026-Proposal.pdf` — the original competition proposal
 
 ## Limitations & future work
@@ -116,6 +156,7 @@ An earlier, smaller check (`run_experiment.py`): 10/10 planted exact leaks caugh
 - ~~The keypoint check recomputes features per pair~~ — **fixed**: SIFT features are now cached per photo (`_keypoints_for` in `winnow/semantic.py`), so a photo compared against many others only pays that cost once instead of once per pair. This was the dominant cost in the full audit below.
 - **The visual review is only measured at 160px**: all 51 evaluation pairs are Imagenette's small version, and uploads to the site are usually full resolution, where zooming has more to find. Its remaining misses are "same product model, different product photo" (3 chainsaw catalog pairs), the same church on a different day, and two garbage trucks. It only runs on scans with ≤ 8 findings and at most 2 pairs per scan, which keeps a scan's worst-case cost close to the text-only one.
 - **Heavily compressed crops can slip through**: a copy that's both cropped and heavily recompressed may fail both the hash and the keypoint check (2 of 75 planted leaks were missed).
+- **The five newest checks are advisory and have narrow operating ranges**: the shift check needs ≥ 5 photos in each set and misses a mild change at website size; the shared-overlay check only sees a pattern on ≥ 7 photos and ≥ 70% of a group of ≥ 8 same-shaped photos, and loses the parts of a watermark that fall over areas it has no contrast against; same-moment shots need an EXIF capture time and camera, which social media and many export tools strip; the marker checks read only what a file declares; the label checks cover boxes, not class ids or segmentation masks. YOLO files carry no image size, so for those the rotation flag stays a risk signal. None of these feeds Claude or the cleaned download.
 - **Photo previews exist only in the tab you scanned from**: they're drawn from your own files in the browser, never from a public copy, so reloading a shared result link shows the report without thumbnails.
 - **Bedrock agent has a one-time setup dependency**: AWS requires each account to submit a "use case" form to Anthropic before the model can be invoked; this is a one-time manual step, not something the pipeline can do for itself.
 - **Public uploads are capped, not authenticated**: anyone can scan photos without an account, so cost is bounded by hard limits instead: 15 scans per day, 3 running at once, and at most 30 findings sent to Claude per scan (about $4/month even under constant abuse). The tradeoff is that someone who burns the daily cap blocks real visitors until the next day. A production version would put uploads behind real accounts with per-user quotas.

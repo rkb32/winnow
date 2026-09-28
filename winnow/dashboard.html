@@ -238,7 +238,7 @@
 <div class="wrap">
   <p class="eyebrow">Winnow</p>
   <h1>Is your photo set ready to train on?</h1>
-  <p class="sub">Winnow checks a batch of training photos for duplicates, blur, and rotation problems, then has Claude decide which ones to remove.</p>
+  <p class="sub">Winnow audits a batch of training photos for duplicates, train/test leaks, blur, watermarks, AI-generated images and label mistakes, then has Claude decide which ones to remove.</p>
 
   <div class="upload">
     <label class="dropzone" id="dropzone">
@@ -252,6 +252,12 @@
       <span class="dz-title">Optional: add your test photos</span>
       <span class="dz-sub">Winnow checks whether any of them also appear in your training photos</span>
       <span class="dz-picked" id="test-picked"></span>
+    </label>
+    <label class="dropzone dropzone-test" id="label-dropzone">
+      <input type="file" id="label-input" multiple accept=".txt,.xml,.json">
+      <span class="dz-title">Optional: add your label files</span>
+      <span class="dz-sub">YOLO (.txt), Pascal VOC (.xml) or COCO (.json). Winnow checks the boxes against your photos</span>
+      <span class="dz-picked" id="label-picked"></span>
     </label>
     <div class="actions">
       <button id="scan-btn" disabled>Scan my photos</button>
@@ -285,12 +291,28 @@
     <div id="leaks"></div>
   </section>
 
+  <section id="shift-section" hidden>
+    <h2 id="shift-title">Train/Test Shift</h2>
+    <p class="h2-sub" id="shift-sub">Your test photos look like a different kind of picture than your training photos, so a good test score may not carry over to real use.</p>
+    <p class="fix" id="shift-fix" hidden><b>Fix:</b> add test photos that look like what the model will really see, or add training photos like the odd ones.</p>
+    <p class="empty" id="shift-clean" hidden>Train/Test Shift &mdash; none found.</p>
+    <div id="shifts"></div>
+  </section>
+
   <section id="dup-section">
     <h2 id="dup-title">Duplicate Photos</h2>
     <p class="h2-sub" id="dup-sub">Two files that are really the same picture, keeping both can trick a model into looking more accurate than it really is.</p>
     <p class="fix" id="dup-fix" hidden><b>Fix:</b> keep one photo from each pair. The download above drops the extras Claude marked Remove.</p>
     <p class="empty" id="dup-clean" hidden>Duplicate Photos &mdash; none found.</p>
     <div id="duplicates"></div>
+  </section>
+
+  <section id="burst-section">
+    <h2 id="burst-title">Same-Moment Shots</h2>
+    <p class="h2-sub" id="burst-sub">Photos taken seconds apart on one camera. Their pixels can differ while the moment is the same, so spreading them across train and test inflates the score.</p>
+    <p class="fix" id="burst-fix" hidden><b>Fix:</b> keep one photo per moment, and never split a moment between train and test.</p>
+    <p class="empty" id="burst-clean" hidden>Same-Moment Shots &mdash; none found.</p>
+    <div id="bursts"></div>
   </section>
 
   <section id="blurry-section">
@@ -303,10 +325,34 @@
 
   <section id="exif-section">
     <h2 id="exif-title">Rotation Problems</h2>
-    <p class="h2-sub" id="exif-sub">Photos with a hidden "rotate me" tag. If your labels were drawn on the unrotated photo, they may no longer line up. Winnow can't see your label files, so these are worth checking by hand.</p>
+    <p class="h2-sub" id="exif-sub">Photos with a hidden "rotate me" tag. If your labels were drawn on the unrotated photo, they may no longer line up. Add your label files above and Winnow checks this for you; otherwise these are worth checking by hand.</p>
     <p class="fix" id="exif-fix" hidden><b>Fix:</b> open a few in your labeling tool. If the boxes are off, re-save the photos with rotation applied (for example Pillow's <code>ImageOps.exif_transpose</code>) and redraw those boxes.</p>
     <p class="empty" id="exif-clean" hidden>Rotation Problems &mdash; none found.</p>
     <div id="exif"></div>
+  </section>
+
+  <section id="watermark-section">
+    <h2 id="watermark-title">Watermarks &amp; Stock Photos</h2>
+    <p class="h2-sub" id="watermark-sub">The same logo, watermark or frame in many photos (a model can learn it instead of the subject), or a stock agency named in a photo's own metadata (its license may not allow training).</p>
+    <p class="fix" id="watermark-fix" hidden><b>Fix:</b> crop the overlay out or replace those photos, and check the license of any stock photo before you train on it.</p>
+    <p class="empty" id="watermark-clean" hidden>Watermarks &amp; Stock Photos &mdash; none found.</p>
+    <div id="watermarks"></div>
+  </section>
+
+  <section id="ai-section">
+    <h2 id="ai-title">AI-Generated Photos</h2>
+    <p class="h2-sub" id="ai-sub">Photos whose own metadata says an AI tool made them. Winnow only reads what a file declares, so a photo with no marker isn't proof it's real.</p>
+    <p class="fix" id="ai-fix" hidden><b>Fix:</b> decide whether generated images belong in your training set, and keep them out of your test set.</p>
+    <p class="empty" id="ai-clean" hidden>AI-Generated Photos &mdash; none found.</p>
+    <div id="ai"></div>
+  </section>
+
+  <section id="label-section" hidden>
+    <h2 id="label-title">Label Problems</h2>
+    <p class="h2-sub" id="label-sub">Boxes that leave the photo, have no area or repeat, label sizes that don't match the photo, and photos with no label.</p>
+    <p class="fix" id="label-fix" hidden><b>Fix:</b> open the flagged photos in your labeling tool and fix those boxes.</p>
+    <p class="empty" id="label-clean" hidden>Label Problems &mdash; none found.</p>
+    <div id="labels"></div>
   </section>
 
   <section id="unreadable-section" hidden>
@@ -330,6 +376,9 @@
   const ALLOWED_TYPES = ["image/jpeg", "image/png"];
   const SESSION_RE = /^[0-9a-f]{32}$/;
   const MIN_INLIERS = 25;
+  const MAX_LABELS = 20;
+  const MAX_LABEL_BYTES = 1024 * 1024;
+  const LABEL_TYPES = { txt: "text/plain", xml: "application/xml", json: "application/json" };
   const ORIENTATION_NAMES = {
     1: "normal", 2: "flip horizontal", 3: "rotate 180°",
     4: "flip vertical", 5: "transpose", 6: "rotate 90° CW",
@@ -338,13 +387,13 @@
 
   const fileInput = document.getElementById("file-input");
   const testInput = document.getElementById("test-input");
-  const leakSection = document.getElementById("leak-section");
+  const labelInput = document.getElementById("label-input");
   const leakContainer = document.getElementById("leaks");
   const scanBtn = document.getElementById("scan-btn");
   const uploadStatus = document.getElementById("upload-status");
   const resultsLabel = document.getElementById("results-label");
   const statusEl = document.getElementById("status");
-  const containers = ["duplicates", "blurry", "exif", "unreadable"]
+  const containers = ["duplicates", "blurry", "exif", "unreadable", "shifts", "bursts", "watermarks", "ai", "labels"]
     .map(id => document.getElementById(id));
 
   // Filenames and AI text come from strangers' uploads, so never let them become HTML.
@@ -444,7 +493,7 @@
     document.getElementById("agent-note").hidden = true;
     containers.forEach(c => { c.innerHTML = ""; });
     leakContainer.innerHTML = "";
-    leakSection.hidden = true;
+    ["leak", "shift", "label"].forEach(p => { document.getElementById(`${p}-section`).hidden = true; });
     document.getElementById("download-bar").hidden = true;
   }
 
@@ -464,7 +513,7 @@
   function render(data) {
     currentData = data;
     clearResults("");
-    const [dup, blur, exif, unreadable] = containers;
+    const [dup, blur, exif, unreadable, shiftBox, burstBox, markBox, aiBox, labelBox] = containers;
     const duplicatePairs = data.duplicate_pairs || [];
     const blurryImages = data.blurry_images || [];
     const exifImages = data.risky_orientation_images || [];
@@ -473,23 +522,48 @@
     const leakedPairs = data.leaked_pairs || [];
     const similarLeaks = data.similar_leaks || [];
     const similarPairs = data.similar_pairs || [];
+    const shift = data.shift || null;
+    const bursts = data.bursts || [];
+    const overlays = data.overlays || [];
+    const stockImages = data.stock_images || [];
+    const aiImages = data.ai_generated_images || [];
+    const labelProblems = data.label_problems || [];
     const leakCount = leakedPairs.length + similarLeaks.length;
     const dupCount = duplicatePairs.length + similarPairs.length;
-    const totalIssues = leakCount + dupCount + blurryImages.length + exifImages.length + unreadableImages.length;
+    const shiftCount = shift && shift.flagged ? 1 : 0;
+    const markCount = overlays.length + stockImages.length;
+    const totalIssues = leakCount + dupCount + blurryImages.length + exifImages.length + unreadableImages.length +
+      shiftCount + bursts.length + markCount + aiImages.length + labelProblems.length;
 
     const allClean = totalIssues === 0;
     setSection("dup", dupCount, allClean);
+    setSection("burst", bursts.length, allClean);
     setSection("blurry", blurryImages.length, allClean);
     setSection("exif", exifImages.length, allClean);
+    setSection("watermark", markCount, allClean);
+    setSection("ai", aiImages.length, allClean);
     setSection("unreadable", unreadableImages.length, allClean);
+    if (shift) {
+      setSection("shift", shiftCount, allClean);
+      document.getElementById("shift-clean").textContent = shift.checked
+        ? "Train/Test Shift — none found."
+        : `Train/Test Shift — not checked (needs at least 5 photos in both sets, you gave ${shift.train_count} and ${shift.test_count}).`;
+      if (!shift.checked) document.getElementById("shift-section").hidden = false;
+    }
+    if (data.label_problems !== undefined) setSection("label", labelProblems.length, allClean);
 
     document.getElementById("headline").innerHTML = totalIssues === 0
-      ? `<b>Looks clean.</b> No leaks, duplicates, blur, or rotation problems found.`
+      ? `<b>Looks clean.</b> No leaks, duplicates, blur, rotation problems, watermarks, or label mistakes found.`
       : `Found <b>${plural(totalIssues, "issue")}</b> across this batch: ` +
         [leakCount && plural(leakCount, "train/test leak"),
+         shiftCount && "a train/test shift",
          dupCount && plural(dupCount, "duplicate pair"),
+         bursts.length && plural(bursts.length, "same-moment group"),
          blurryImages.length && plural(blurryImages.length, "blurry photo"),
          exifImages.length && plural(exifImages.length, "rotation problem"),
+         markCount && plural(markCount, "watermark or stock finding"),
+         aiImages.length && plural(aiImages.length, "AI-generated photo"),
+         labelProblems.length && plural(labelProblems.length, "label problem"),
          unreadableImages.length && plural(unreadableImages.length, "unreadable file")]
           .filter(Boolean).join(", ") + ".";
 
@@ -631,6 +705,58 @@
       });
     }
 
+    // Everything below only reports: none of these findings gets a Keep/Remove call.
+    if (shift && shift.flagged) {
+      shiftBox.appendChild(card(
+        `<span class="names">Your test photos look different from your training photos</span><span class="chip bad">Shifted</span>`,
+        `On average the two sets differ more than chance allows (p = ${esc(shift.p_value)}, from shuffling which photos count as test 2,000 times). Shown: the test photos least like any training photo.`,
+        `squared distance between the two sets' average embeddings ${esc(shift.distance)}; ${esc(shift.train_count)} training and ${esc(shift.test_count)} test photos; ` +
+          `the shown photos' similarity to their nearest training photo: ${shift.outliers.map(o => esc(o[1])).join(", ")}`,
+        shift.outliers.map(o => o[0])));
+    }
+
+    bursts.forEach(g => {
+      const crosses = g.test_files.length > 0 && g.test_files.length < g.files.length;
+      burstBox.appendChild(card(
+        `<span class="names">${plural(g.files.length, "photo")} within ${esc(g.span)} seconds on ${esc(g.camera)}</span>` +
+          `<span class="chip ${crosses ? "bad" : "warn"}">${crosses ? "Crosses train/test" : "Same moment"}</span>`,
+        crosses
+          ? "Photos of one moment sit in both the training and the test set, so the test set has effectively been seen."
+          : "Photos of one moment add little new information, and any split that lands between them leaks.",
+        "capture times from EXIF, same camera, each photo within 3 seconds of the next",
+        g.files));
+    });
+
+    const spot = ([x1, y1, x2, y2]) => {
+      if (x2 - x1 > 0.6 && y2 - y1 > 0.6) return "across the frame";
+      const third = (a, b) => ((a + b) / 2 < 0.34 ? 0 : (a + b) / 2 > 0.66 ? 2 : 1);
+      const v = ["top", "middle", "bottom"][third(y1, y2)], h = ["left", "center", "right"][third(x1, x2)];
+      if (v === "middle" && h === "center") return "in the center";
+      return v === "middle" ? `near the ${h} edge` : h === "center" ? `near the ${v} edge` : `near the ${v}-${h} corner`;
+    };
+    overlays.forEach(g => markBox.appendChild(card(
+      `<span class="names">The same pattern ${spot(g.box)} in ${plural(g.files.length, "photo")}</span><span class="chip warn">Shared overlay</span>`,
+      "A watermark, logo, frame or fixed background on these photos. A model can learn it instead of the subject.",
+      `edges at that spot agree in ${Math.round(g.strength * 100)}% of the photos compared`,
+      g.files)));
+    stockImages.forEach(([p, agency]) => markBox.appendChild(card(
+      `<span class="names file">${esc(filename(p))}</span><span class="chip warn">Stock photo: ${esc(agency)}</span>`,
+      "This photo's own metadata names a stock agency. Stock licenses often forbid training AI on the photo, so check yours.",
+      "read from the file's metadata",
+      [p])));
+
+    aiImages.forEach(([p, marker]) => aiBox.appendChild(card(
+      `<span class="names file">${esc(filename(p))}</span><span class="chip warn">AI-generated</span>`,
+      `This file says an AI tool made it (${esc(marker)}).`,
+      "read from the file's metadata, not guessed from the pixels",
+      [p])));
+
+    const LABEL_KINDS = { outside: "Box outside photo", empty: "Empty box", repeated: "Repeated box", malformed: "Bad line",
+      size: "Size mismatch", missing: "No label", orphan: "No matching photo", unreadable: "Can't read" };
+    labelProblems.forEach(([p, kind, detail]) => labelBox.appendChild(card(
+      `<span class="names file">${esc(filename(p))}</span><span class="chip ${kind === "missing" ? "warn" : "bad"}">${LABEL_KINDS[kind] || esc(kind)}</span>`,
+      esc(detail), "", [p])));
+
     updateDownloadBar();
   }
 
@@ -699,7 +825,7 @@
     };
   }
 
-  function examplePhoto(seed, { mirror = false, zoom = false, blur = false } = {}) {
+  function examplePhoto(seed, { mirror = false, zoom = false, blur = false, stamp = false } = {}) {
     const canvas = document.createElement("canvas");
     canvas.width = 480;
     canvas.height = 360;
@@ -725,16 +851,40 @@
         g.fill();
       }
     }
+    if (stamp) {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.filter = "none";
+      g.font = "bold 44px sans-serif";
+      g.fillStyle = "rgba(255, 255, 255, 0.5)";
+      g.fillText("STOCKPHOTO", 215, 340);
+    }
     return new Promise(resolve => canvas.toBlob(resolve, "image/png"));
   }
 
   const EXAMPLES = {
     train: [
-      ["park.png", 11, {}], ["park_copy.png", 11, {}], ["park_flipped.png", 11, { mirror: true }],
-      ["market.png", 22, {}], ["market_shaky.png", 22, { blur: true }], ["harbor.png", 33, {}],
+      ["park.png", 11, { stamp: true }], ["park_copy.png", 11, { stamp: true }],
+      ["park_flipped.png", 11, { mirror: true, stamp: true }],
+      ["market.png", 22, { stamp: true }], ["market_shaky.png", 22, { blur: true, stamp: true }],
+      ["harbor.png", 33, { stamp: true }],
     ],
-    test: [["test_harbor_zoomed.png", 33, { zoom: true }], ["test_garden.png", 44, {}]],
+    test: [["test_harbor_zoomed.png", 33, { zoom: true, stamp: true }], ["test_garden.png", 44, { stamp: true }]],
+    // YOLO files with two planted mistakes: a box off the edge of market.png, a box drawn twice on harbor.png.
+    labels: [
+      ["park.txt", "0 0.5 0.5 0.4 0.4\n1 0.2 0.3 0.1 0.1\n"],
+      ["park_copy.txt", "0 0.5 0.5 0.4 0.4\n1 0.2 0.3 0.1 0.1\n"],
+      ["park_flipped.txt", "0 0.5 0.5 0.4 0.4\n1 0.8 0.3 0.1 0.1\n"],
+      ["market.txt", "0 0.5 0.5 0.4 0.4\n0 0.97 0.5 0.3 0.3\n"],
+      ["market_shaky.txt", "0 0.5 0.5 0.4 0.4\n"],
+      ["harbor.txt", "0 0.5 0.5 0.3 0.3\n0 0.5 0.5 0.3 0.3\n"],
+    ],
   };
+
+  function exampleLabels() {
+    const transfer = new DataTransfer();
+    EXAMPLES.labels.forEach(([name, text]) => transfer.items.add(new File([text], name, { type: "text/plain" })));
+    return transfer.files;
+  }
 
   async function exampleFiles(list) {
     const transfer = new DataTransfer();
@@ -744,7 +894,9 @@
     return transfer.files;
   }
 
-  function validate(train, test) {
+  const labelType = file => LABEL_TYPES[file.name.split(".").pop().toLowerCase()];
+
+  function validate(train, test, labels = []) {
     const files = [...train, ...test];
     if (!train.length) {
       return test.length ? "Add training photos too, your test photos get compared against them." : "Pick some photos first.";
@@ -754,15 +906,22 @@
     if (wrongType) return `${wrongType.name} isn't a JPEG or PNG.`;
     const tooBig = files.find(f => f.size > MAX_BYTES);
     if (tooBig) return `${tooBig.name} is over 5 MB.`;
+    if (labels.length > MAX_LABELS) return `Pick at most ${MAX_LABELS} label files.`;
+    const notLabel = labels.find(f => !labelType(f));
+    if (notLabel) return `${notLabel.name} isn't a .txt, .xml or .json label file.`;
+    const bigLabel = labels.find(f => f.size > MAX_LABEL_BYTES);
+    if (bigLabel) return `${bigLabel.name} is over 1 MB.`;
     return null;
   }
 
   function showPicked() {
     const train = [...fileInput.files];
     const test = [...testInput.files];
-    const problem = train.length || test.length ? validate(train, test) : null;
+    const labels = [...labelInput.files];
+    const problem = train.length || test.length ? validate(train, test, labels) : null;
     document.getElementById("picked").textContent = train.length ? plural(train.length, "photo") + " selected" : "";
     document.getElementById("test-picked").textContent = test.length ? plural(test.length, "test photo") + " selected" : "";
+    document.getElementById("label-picked").textContent = labels.length ? plural(labels.length, "label file") + " selected" : "";
     uploadStatus.textContent = problem || "";
     scanBtn.disabled = !train.length || Boolean(problem);
   }
@@ -812,7 +971,7 @@
     }
   }
 
-  [["dropzone", fileInput], ["test-dropzone", testInput]].forEach(([id, input]) => {
+  [["dropzone", fileInput], ["test-dropzone", testInput], ["label-dropzone", labelInput]].forEach(([id, input]) => {
     const zone = document.getElementById(id);
     input.addEventListener("change", showPicked);
     ["dragenter", "dragover"].forEach(type => zone.addEventListener(type, e => {
@@ -832,12 +991,13 @@
   scanBtn.addEventListener("click", async () => {
     const train = [...fileInput.files];
     const test = [...testInput.files];
-    const problem = validate(train, test);
+    const labels = [...labelInput.files];
+    const problem = validate(train, test, labels);
     if (problem) {
       uploadStatus.textContent = problem;
       return;
     }
-    const files = [...train, ...test];
+    const files = [...train, ...test, ...labels];
     scanBtn.disabled = true;
     try {
       uploadStatus.textContent = `Uploading ${plural(files.length, "photo")}…`;
@@ -845,12 +1005,13 @@
         files: [
           ...train.map(f => ({ name: f.name, type: f.type, split: "train" })),
           ...test.map(f => ({ name: f.name, type: f.type, split: "test" })),
+          ...labels.map(f => ({ name: f.name, type: labelType(f), split: "labels" })),
         ],
       });
       resetLocalFiles();
       uploads.forEach((target, i) => {
         const [, , folder, index] = target.fields.key.split("/");
-        localFiles.set(`${folder}/${index}`, files[i]);
+        if (folder !== "labels") localFiles.set(`${folder}/${index}`, files[i]);
       });
       await Promise.all(uploads.map((target, i) => uploadFile(target, files[i])));
       await api("/scan", { session });
@@ -901,8 +1062,9 @@
   document.getElementById("example-btn").addEventListener("click", async () => {
     fileInput.files = await exampleFiles(EXAMPLES.train);
     testInput.files = await exampleFiles(EXAMPLES.test);
+    labelInput.files = exampleLabels();
     showPicked();
-    uploadStatus.textContent = "Loaded 8 generated example photos with a few planted problems. Press Scan to check them.";
+    uploadStatus.textContent = "Loaded 8 generated example photos and 6 label files with a few planted problems. Press Scan to check them.";
   });
 
   const sessionParam = new URLSearchParams(location.search).get("session");
