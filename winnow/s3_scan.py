@@ -9,7 +9,23 @@ from scan import scan_folder
 from agent import MAX_FINDINGS, apply_quarantine, build_findings_summary, decide_actions
 
 
-def download_bucket_prefix(bucket, prefix, dest_dir):
+def session_layout(session, base=None):
+    """Where a visitor's files are read from, and what their local copies are named after.
+
+    Photos a guest chose to keep live under that guest's own folder. Naming the local copies as if
+    they were plain uploads keeps the folder out of the scan's public results, so two reports from
+    one guest can't be linked to each other.
+    """
+    source = base or f"uploads/{session}/"
+    return {"images": f"{source}images/", "test": f"{source}test/", "labels": f"{source}labels/",
+            "quarantine": f"{source}quarantine/", "alias": f"uploads/{session}/" if base else None}
+
+
+def local_name(key, prefix, alias_root=None):
+    return ((alias_root + key[len(prefix):]) if alias_root else key).replace("/", "__")
+
+
+def download_bucket_prefix(bucket, prefix, dest_dir, alias_root=None):
     s3 = boto3.client("s3")
     paginator = s3.get_paginator("list_objects_v2")
     key_by_local_path = {}
@@ -18,7 +34,7 @@ def download_bucket_prefix(bucket, prefix, dest_dir):
             key = obj["Key"]
             if key.endswith("/"):
                 continue
-            local_path = os.path.join(dest_dir, key.replace("/", "__"))
+            local_path = os.path.join(dest_dir, local_name(key, prefix, alias_root))
             s3.download_file(bucket, key, local_path)
             key_by_local_path[local_path] = key
     return key_by_local_path
@@ -38,15 +54,20 @@ def upload_results(bucket, result, session=None):
     return key
 
 
-def run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix=None):
+def run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix=None, alias=None):
+    """alias: the upload-style prefix (uploads/<session>/) to name local copies after, when the files
+    are read from somewhere else."""
+    def aliased(folder):
+        return f"{alias}{folder}/" if alias else None
+
     with tempfile.TemporaryDirectory() as tmp_dir:
-        key_by_local_path = download_bucket_prefix(bucket, prefix, tmp_dir)
+        key_by_local_path = download_bucket_prefix(bucket, prefix, tmp_dir, aliased("images"))
 
         test_dir = None
         if test_prefix:
             test_dir = os.path.join(tmp_dir, "_test_split")
             os.makedirs(test_dir)
-            test_keys = download_bucket_prefix(bucket, test_prefix, test_dir)
+            test_keys = download_bucket_prefix(bucket, test_prefix, test_dir, aliased("test"))
             key_by_local_path.update(test_keys)
             if not test_keys:
                 test_dir = None
@@ -55,7 +76,7 @@ def run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix=None):
         if labels_prefix:
             labels_dir = os.path.join(tmp_dir, "_labels")
             os.makedirs(labels_dir)
-            if not download_bucket_prefix(bucket, labels_prefix, labels_dir):
+            if not download_bucket_prefix(bucket, labels_prefix, labels_dir, aliased("labels")):
                 labels_dir = None
 
         result = scan_folder(tmp_dir, test_folder_path=test_dir, label_folder_path=labels_dir)
@@ -78,11 +99,11 @@ def run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix=None):
 if __name__ == "__main__":
     bucket = os.environ["WINNOW_BUCKET"]
     session = os.environ.get("WINNOW_SESSION")
+    alias = None
     if session:
-        prefix = f"uploads/{session}/images/"
-        test_prefix = f"uploads/{session}/test/"
-        quarantine_prefix = f"uploads/{session}/quarantine/"
-        labels_prefix = f"uploads/{session}/labels/"
+        layout = session_layout(session, os.environ.get("WINNOW_BASE"))
+        prefix, test_prefix = layout["images"], layout["test"]
+        quarantine_prefix, labels_prefix, alias = layout["quarantine"], layout["labels"], layout["alias"]
     else:
         prefix = os.environ.get("WINNOW_PREFIX", "")
         test_prefix = os.environ.get("WINNOW_TEST_PREFIX")
@@ -90,7 +111,7 @@ if __name__ == "__main__":
         labels_prefix = os.environ.get("WINNOW_LABELS_PREFIX")
 
     try:
-        combined = run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix)
+        combined = run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix, alias)
     except Exception:
         # Without this, a visitor's page would poll for a result that never arrives.
         if session:

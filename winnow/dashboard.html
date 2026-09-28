@@ -229,6 +229,10 @@
     color: var(--text);
     border: 1px solid var(--border);
   }
+  a.toggle { display: inline-block; text-decoration: none; }
+  .keep-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; font-size: 13px; color: var(--text-dim); cursor: pointer; }
+  .keep-row input { margin-top: 3px; }
+  .keep-row b { color: var(--text); font-weight: 600; }
   .download { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -12px 0 28px; }
   .download[hidden] { display: none; }
   .fix { font-size: 13px; margin: 0 0 12px; }
@@ -259,13 +263,23 @@
       <span class="dz-sub">YOLO (.txt), Pascal VOC (.xml) or COCO (.json). Winnow checks the boxes against your photos</span>
       <span class="dz-picked" id="label-picked"></span>
     </label>
+    <label class="keep-row" id="keep-row">
+      <input type="checkbox" id="keep-box" checked>
+      <span><b>Keep this scan for 30 days.</b> It shows up under Past scans when you come back, with its photos. Private to this browser, and you can delete it any time. Untick to delete everything within about a day.</span>
+    </label>
     <div class="actions">
       <button id="scan-btn" disabled>Scan my photos</button>
       <button class="link-btn" id="example-btn" type="button">No photos handy? Load example photos</button>
       <p id="upload-status" role="status"></p>
     </div>
-    <p class="note">Your photos are never shown publicly and are deleted automatically within about a day. Please don't upload anything private.</p>
+    <p class="note">Your photos are never shown publicly and are never used to train anything. Please don't upload anything private.</p>
   </div>
+
+  <section id="past-section" hidden>
+    <h2>Past scans</h2>
+    <p class="h2-sub">Kept for 30 days, in this browser only. <button class="link-btn" id="recovery-btn" type="button">Copy a link to open them on another device</button> <span id="recovery-note"></span></p>
+    <div id="past-list"></div>
+  </section>
 
   <p class="results-label" id="results-label">What Winnow checks for</p>
   <p id="status">Upload photos above, or load the example set, then press Scan to see your results here.</p>
@@ -416,6 +430,8 @@
   const localFiles = new Map();
   const previewUrls = new Map();
   const overrides = new Map();
+  // Signed links to the photos a guest chose to keep, keyed "images/3" or "test/7" like localFiles.
+  const keptPhotos = new Map();
   let currentData = null;
 
   function fileKey(path) {
@@ -424,8 +440,9 @@
   }
 
   function previewUrl(path) {
-    const file = localFiles.get(fileKey(path));
-    if (!file) return null;
+    const key = fileKey(path);
+    const file = localFiles.get(key);
+    if (!file) return keptPhotos.get(key) || null;
     if (!previewUrls.has(file)) previewUrls.set(file, URL.createObjectURL(file));
     return previewUrls.get(file);
   }
@@ -510,6 +527,35 @@
     return `${n} ${word}${n === 1 ? "" : "s"}`;
   }
 
+  // The same tally drives the headline and each Past scans card, so they can never disagree.
+  function issueCounts(data) {
+    return {
+      leak: (data.leaked_pairs || []).length + (data.similar_leaks || []).length,
+      shift: data.shift && data.shift.flagged ? 1 : 0,
+      dup: (data.duplicate_pairs || []).length + (data.similar_pairs || []).length,
+      burst: (data.bursts || []).length,
+      blurry: (data.blurry_images || []).length,
+      exif: (data.risky_orientation_images || []).length,
+      mark: (data.overlays || []).length + (data.stock_images || []).length,
+      ai: (data.ai_generated_images || []).length,
+      label: (data.label_problems || []).length,
+      unreadable: (data.unreadable_images || []).length,
+    };
+  }
+
+  function issueText(c) {
+    return [c.leak && plural(c.leak, "train/test leak"),
+            c.shift && "a train/test shift",
+            c.dup && plural(c.dup, "duplicate pair"),
+            c.burst && plural(c.burst, "same-moment group"),
+            c.blurry && plural(c.blurry, "blurry photo"),
+            c.exif && plural(c.exif, "rotation problem"),
+            c.mark && plural(c.mark, "watermark or stock finding"),
+            c.ai && plural(c.ai, "AI-generated photo"),
+            c.label && plural(c.label, "label problem"),
+            c.unreadable && plural(c.unreadable, "unreadable file")].filter(Boolean).join(", ");
+  }
+
   function render(data) {
     currentData = data;
     clearResults("");
@@ -528,12 +574,9 @@
     const stockImages = data.stock_images || [];
     const aiImages = data.ai_generated_images || [];
     const labelProblems = data.label_problems || [];
-    const leakCount = leakedPairs.length + similarLeaks.length;
-    const dupCount = duplicatePairs.length + similarPairs.length;
-    const shiftCount = shift && shift.flagged ? 1 : 0;
-    const markCount = overlays.length + stockImages.length;
-    const totalIssues = leakCount + dupCount + blurryImages.length + exifImages.length + unreadableImages.length +
-      shiftCount + bursts.length + markCount + aiImages.length + labelProblems.length;
+    const counts = issueCounts(data);
+    const leakCount = counts.leak, dupCount = counts.dup, shiftCount = counts.shift, markCount = counts.mark;
+    const totalIssues = Object.values(counts).reduce((a, b) => a + b, 0);
 
     const allClean = totalIssues === 0;
     setSection("dup", dupCount, allClean);
@@ -554,18 +597,7 @@
 
     document.getElementById("headline").innerHTML = totalIssues === 0
       ? `<b>Looks clean.</b> No leaks, duplicates, blur, rotation problems, watermarks, or label mistakes found.`
-      : `Found <b>${plural(totalIssues, "issue")}</b> across this batch: ` +
-        [leakCount && plural(leakCount, "train/test leak"),
-         shiftCount && "a train/test shift",
-         dupCount && plural(dupCount, "duplicate pair"),
-         bursts.length && plural(bursts.length, "same-moment group"),
-         blurryImages.length && plural(blurryImages.length, "blurry photo"),
-         exifImages.length && plural(exifImages.length, "rotation problem"),
-         markCount && plural(markCount, "watermark or stock finding"),
-         aiImages.length && plural(aiImages.length, "AI-generated photo"),
-         labelProblems.length && plural(labelProblems.length, "label problem"),
-         unreadableImages.length && plural(unreadableImages.length, "unreadable file")]
-          .filter(Boolean).join(", ") + ".";
+      : `Found <b>${plural(totalIssues, "issue")}</b> across this batch: ${issueText(counts)}.`;
 
     const agentNote = document.getElementById("agent-note");
     if (data.agent_error) {
@@ -780,6 +812,7 @@
     previewUrls.forEach(url => URL.revokeObjectURL(url));
     previewUrls.clear();
     localFiles.clear();
+    keptPhotos.clear();
     overrides.clear();
   }
 
@@ -967,9 +1000,123 @@
     render(data);
     uploadStatus.textContent = "Done. Bookmark or share this page's link to come back to these results.";
     if (!localFiles.size) {
-      statusEl.textContent = "Photo previews and the cleaned download only work right after a scan, in the tab you scanned from.";
+      statusEl.textContent = (await loadKeptPhotos(session))
+        ? "These photos are your kept copies (30 days), so previews work here. The cleaned download only works right after a scan."
+        : "Photo previews and the cleaned download only work right after a scan, in the tab you scanned from.";
     }
   }
+
+  // Past scans: photos a guest chose to keep. The guest id is a secret held only in this browser
+  // (or in a recovery link); the server never sees it in a URL and stores only a hash of it.
+  const GUEST_KEY = "winnow_guest";
+  const GUEST_RE = /^[0-9a-f]{64}$/;
+  const keepBox = document.getElementById("keep-box");
+
+  function readGuest() {
+    try {
+      const value = localStorage.getItem(GUEST_KEY);
+      return GUEST_RE.test(value || "") ? value : null;
+    } catch { return null; }
+  }
+
+  function storageWorks() {
+    try {
+      localStorage.setItem("winnow_probe", "1");
+      localStorage.removeItem("winnow_probe");
+      return true;
+    } catch { return false; }
+  }
+
+  function ensureGuest() {
+    let guest = readGuest();
+    if (!guest) {
+      guest = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, "0")).join("");
+      localStorage.setItem(GUEST_KEY, guest);
+    }
+    return guest;
+  }
+
+  async function loadKeptPhotos(session) {
+    const guest = readGuest();
+    if (!guest) return false;
+    try {
+      const { photos } = await api("/photo-urls", { session, guest });
+      Object.entries(photos).forEach(([key, url]) => keptPhotos.set(key, url));
+      render(currentData);
+      return true;
+    } catch { return false; }
+  }
+
+  const pastList = document.getElementById("past-list");
+
+  async function summaryFor(session) {
+    const r = await fetch(`results/sessions/${session}.json`, { cache: "no-store" }).catch(() => null);
+    if (!r || !r.ok) return "The report has expired or is still being made.";
+    const data = await r.json();
+    if (data.error) return "This scan failed.";
+    const counts = issueCounts(data);
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    return total ? `${plural(total, "issue")}: ${issueText(counts)}.` : "Looks clean.";
+  }
+
+  function pastCard(scan) {
+    const div = document.createElement("div");
+    div.className = "card";
+    const when = new Date(scan.saved).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    const thumbs = scan.previews.map(url => `<img class="thumb" src="${esc(url)}" alt="" data-name="Kept photo">`).join("");
+    div.innerHTML =
+      `<div class="card-top"><span class="names">${esc(when)} · ${plural(scan.photos, "photo")}</span>` +
+      `<span class="card-actions"><a class="toggle" href="?session=${esc(scan.session)}">Open</a>` +
+      `<button class="toggle" type="button" data-forget="${esc(scan.session)}">Delete photos</button></span></div>` +
+      `<div class="explain">Loading the report…</div>` + (thumbs ? `<div class="thumbs">${thumbs}</div>` : "");
+    summaryFor(scan.session).then(text => { div.querySelector(".explain").textContent = text; });
+    return div;
+  }
+
+  async function loadPastScans() {
+    const guest = readGuest();
+    if (!guest) return;
+    let scans;
+    try { scans = (await api("/library", { guest })).scans; } catch { return; }
+    document.getElementById("past-section").hidden = !scans.length;
+    pastList.innerHTML = "";
+    scans.forEach(scan => pastList.appendChild(pastCard(scan)));
+  }
+
+  pastList.addEventListener("click", async e => {
+    const session = e.target.closest("[data-forget]")?.dataset.forget;
+    const guest = readGuest();
+    if (!session || !guest || !confirm("Delete this scan's photos? Its text report stays until it expires.")) return;
+    try {
+      await api("/forget", { session, guest });
+      loadPastScans();
+    } catch (err) { uploadStatus.textContent = err.message; }
+  });
+
+  document.getElementById("recovery-btn").addEventListener("click", async () => {
+    const note = document.getElementById("recovery-note");
+    const guest = readGuest();
+    if (!guest) return;
+    try {
+      await navigator.clipboard.writeText(`${location.origin}${location.pathname}#guest=${guest}`);
+      note.textContent = "Copied. Anyone with that link can open your past scans, so treat it like a password.";
+    } catch {
+      note.textContent = "Couldn't copy automatically.";
+    }
+  });
+
+  // Opening a recovery link on a new device adopts its guest id, then removes it from the address bar.
+  const recovered = /^#guest=([0-9a-f]{64})$/.exec(location.hash);
+  if (recovered) {
+    try { localStorage.setItem(GUEST_KEY, recovered[1]); } catch { /* storage blocked: the link still works this visit only */ }
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  if (!storageWorks()) {
+    keepBox.checked = false;
+    keepBox.disabled = true;
+    document.getElementById("keep-row").title = "This browser blocks storage, so a guest id can't be kept.";
+  }
+  loadPastScans();
 
   [["dropzone", fileInput], ["test-dropzone", testInput], ["label-dropzone", labelInput]].forEach(([id, input]) => {
     const zone = document.getElementById(id);
@@ -998,6 +1145,8 @@
       return;
     }
     const files = [...train, ...test, ...labels];
+    const kept = keepBox.checked && storageWorks();
+    const guest = kept ? ensureGuest() : null;
     scanBtn.disabled = true;
     try {
       uploadStatus.textContent = `Uploading ${plural(files.length, "photo")}…`;
@@ -1007,16 +1156,20 @@
           ...test.map(f => ({ name: f.name, type: f.type, split: "test" })),
           ...labels.map(f => ({ name: f.name, type: labelType(f), split: "labels" })),
         ],
+        ...(kept ? { keep: true, guest } : {}),
       });
       resetLocalFiles();
       uploads.forEach((target, i) => {
-        const [, , folder, index] = target.fields.key.split("/");
+        // Kept photos sit one folder deeper (saved/<owner>/<session>/...), so count from the end.
+        const parts = target.fields.key.split("/");
+        const [folder, index] = [parts.at(-3), parts.at(-2)];
         if (folder !== "labels") localFiles.set(`${folder}/${index}`, files[i]);
       });
       await Promise.all(uploads.map((target, i) => uploadFile(target, files[i])));
-      await api("/scan", { session });
+      await api("/scan", { session, ...(kept ? { guest } : {}) });
       history.replaceState(null, "", "?session=" + session);
       await showSession(session);
+      if (kept) loadPastScans();
     } catch (err) {
       uploadStatus.textContent = err.message;
     } finally {

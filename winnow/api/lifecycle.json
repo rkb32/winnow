@@ -1,0 +1,28 @@
+{
+  "Rules": [
+    {
+      "Expiration": {"Days": 1},
+      "ID": "expire-visitor-uploads",
+      "Filter": {"Prefix": "uploads/"},
+      "Status": "Enabled"
+    },
+    {
+      "Expiration": {"Days": 30},
+      "ID": "expire-saved-photos",
+      "Filter": {"Prefix": "saved/"},
+      "Status": "Enabled"
+    },
+    {
+      "Expiration": {"Days": 30},
+      "ID": "expire-visitor-reports",
+      "Filter": {"Prefix": "results/sessions/"},
+      "Status": "Enabled"
+    },
+    {
+      "Expiration": {"Days": 90},
+      "ID": "expire-scan-log",
+      "Filter": {"Prefix": "scan-log/"},
+      "Status": "Enabled"
+    }
+  ]
+}
