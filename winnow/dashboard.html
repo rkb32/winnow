@@ -261,10 +261,10 @@
     <p class="note">Your photos are never shown publicly and are deleted automatically within about a day. Please don't upload anything private.</p>
   </div>
 
-  <p class="results-label" id="results-label">Example scan</p>
-  <p id="status">Loading…</p>
+  <p class="results-label" id="results-label">What Winnow checks for</p>
+  <p id="status">Upload photos above, or load the example set, then press Scan to see your results here.</p>
 
-  <div class="headline" id="headline"></div>
+  <div class="headline" id="headline" hidden></div>
   <p class="agent-note" id="agent-note" hidden></p>
 
   <div class="download" id="download-bar" hidden>
@@ -282,28 +282,28 @@
   <section>
     <h2>Duplicate Photos</h2>
     <p class="h2-sub">Two files that are really the same picture, keeping both can trick a model into looking more accurate than it really is.</p>
-    <p class="fix"><b>Fix:</b> keep one photo from each pair. The download above drops the extras Claude marked Remove.</p>
+    <p class="fix" id="dup-fix" hidden><b>Fix:</b> keep one photo from each pair. The download above drops the extras Claude marked Remove.</p>
     <div id="duplicates"></div>
   </section>
 
   <section>
     <h2>Blurry Photos</h2>
     <p class="h2-sub">Too out of focus to be useful for training.</p>
-    <p class="fix"><b>Fix:</b> drop them, or retake them if that class is short on examples.</p>
+    <p class="fix" id="blurry-fix" hidden><b>Fix:</b> drop them, or retake them if that class is short on examples.</p>
     <div id="blurry"></div>
   </section>
 
   <section>
     <h2>Rotation Problems</h2>
     <p class="h2-sub">Photos with a hidden "rotate me" tag. If your labels were drawn on the unrotated photo, they may no longer line up. Winnow can't see your label files, so these are worth checking by hand.</p>
-    <p class="fix"><b>Fix:</b> open a few in your labeling tool. If the boxes are off, re-save the photos with rotation applied (for example Pillow's <code>ImageOps.exif_transpose</code>) and redraw those boxes.</p>
+    <p class="fix" id="exif-fix" hidden><b>Fix:</b> open a few in your labeling tool. If the boxes are off, re-save the photos with rotation applied (for example Pillow's <code>ImageOps.exif_transpose</code>) and redraw those boxes.</p>
     <div id="exif"></div>
   </section>
 
   <section>
     <h2>Couldn't Be Scanned</h2>
     <p class="h2-sub">Files that failed to open, likely corrupted or not actually images.</p>
-    <p class="fix"><b>Fix:</b> re-export or re-download these files, a model can't learn from them.</p>
+    <p class="fix" id="unreadable-fix" hidden><b>Fix:</b> re-export or re-download these files, a model can't learn from them.</p>
     <div id="unreadable"></div>
   </section>
 </div>
@@ -418,7 +418,9 @@
   }
 
   function clearResults(message) {
-    document.getElementById("headline").textContent = message;
+    const headline = document.getElementById("headline");
+    headline.hidden = false;
+    headline.textContent = message;
     document.getElementById("agent-note").hidden = true;
     containers.forEach(c => { c.innerHTML = ""; });
     leakContainer.innerHTML = "";
@@ -454,6 +456,12 @@
     const leakCount = leakedPairs.length + similarLeaks.length;
     const dupCount = duplicatePairs.length + similarPairs.length;
     const totalIssues = leakCount + dupCount + blurryImages.length + exifImages.length + unreadableImages.length;
+
+    // The fix instructions only make sense once that category actually found something.
+    document.getElementById("dup-fix").hidden = !dupCount;
+    document.getElementById("blurry-fix").hidden = !blurryImages.length;
+    document.getElementById("exif-fix").hidden = !exifImages.length;
+    document.getElementById("unreadable-fix").hidden = !unreadableImages.length;
 
     document.getElementById("headline").innerHTML = totalIssues === 0
       ? `<b>Looks clean.</b> No leaks, duplicates, blur, or rotation problems found.`
@@ -719,22 +727,6 @@
     return transfer.files;
   }
 
-  function loadExample() {
-    fetch("results/latest.json")
-      .then(r => {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-      })
-      .then(data => {
-        resultsLabel.textContent = "Example scan";
-        statusEl.textContent = "A sample batch we scanned earlier. Upload your own photos above to see your results here.";
-        render(data);
-      })
-      .catch(err => {
-        statusEl.textContent = "Could not load the example scan (" + err.message + ")";
-      });
-  }
-
   function validate(train, test) {
     const files = [...train, ...test];
     if (!train.length) {
@@ -889,7 +881,5 @@
   const sessionParam = new URLSearchParams(location.search).get("session");
   if (sessionParam && SESSION_RE.test(sessionParam)) {
     showSession(sessionParam).catch(err => { uploadStatus.textContent = err.message; });
-  } else {
-    loadExample();
   }
 </script>
