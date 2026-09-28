@@ -1,8 +1,9 @@
 import cv2
+import numpy as np
 
-from conftest import crop, names, scene
-from semantic import (MIN_INLIERS, compute_embeddings, find_semantic_leaks, find_semantic_pairs,
-                      keypoint_inliers, match_regions)
+from conftest import crop, fixed_camera, names, scene
+from semantic import (MIN_INLIERS, compute_embeddings, confirm_hash_pairs, find_semantic_leaks,
+                      find_semantic_pairs, keypoint_inliers, match_regions)
 
 
 def test_mirrored_copy_is_found_and_different_photo_is_not(save):
@@ -44,6 +45,32 @@ def test_match_regions_undo_the_mirror(save):
     left_half_mirrored = cv2.flip(image[:, :240], 1)
     box_a, _ = match_regions(save("a.png", image), save("b.png", left_half_mirrored))
     assert box_a[2] <= 0.55
+
+
+def test_fixed_camera_frames_with_different_subjects_are_not_copies(save):
+    # The shared background alone gives 300+ inliers and near-identical embeddings.
+    a, b = save("a.png", fixed_camera(50)), save("b.png", fixed_camera(51))
+    embeddings = compute_embeddings([a, b])
+    assert find_semantic_pairs(embeddings, already_found=[]) == []
+    assert confirm_hash_pairs([(a, b, 0)], embeddings) == []
+
+
+def test_fixed_camera_frames_of_the_same_subject_still_match(save):
+    a, b = save("a.png", fixed_camera(50)), save("b.png", fixed_camera(50, shift=20))
+    assert names(find_semantic_pairs(compute_embeddings([a, b]), already_found=[])) == {frozenset({"a.png", "b.png"})}
+
+
+def test_same_size_recompressed_copy_is_still_a_copy(save):
+    image = scene(20)
+    jpeg = cv2.imdecode(cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 30])[1], cv2.IMREAD_COLOR)
+    assert keypoint_inliers(save("a.png", image), save("b.png", jpeg)) >= MIN_INLIERS
+
+
+def test_recolored_copy_is_still_a_copy(save):
+    # Every pixel changed, so there's no fixed background to set aside.
+    image = scene(21)
+    brighter = cv2.add(image, np.full_like(image, 40))
+    assert keypoint_inliers(save("a.png", image), save("b.png", brighter)) >= MIN_INLIERS
 
 
 def test_unreadable_files_are_skipped(save, tmp_path):

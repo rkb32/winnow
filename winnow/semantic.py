@@ -105,9 +105,66 @@ def _best_match(path_a, path_b):
     return straight[0], straight[1], features_a[2], features_b[2]
 
 
+# A fixed camera repeats its background pixel for pixel in every frame, so whole-frame SIFT
+# finds hundreds of inliers (and the embedder sees a match) even when the subject changed.
+# When two photos line up with no shift at all, only the region that differs between them
+# can say whether they show the same thing.
+CHANGE_LEVEL = 25          # grayscale difference that counts as changed, after a light blur
+# Below 0.1% changed, the same picture: JPEG noise leaves 0 even at quality 10, and a ticking
+# seconds counter stays under it. The cost is that a subject under ~40px in a 1000px frame still
+# reads as a copy; a false alarm someone can clear beats a near-duplicate frame nobody sees.
+MIN_CHANGED_AREA = 0.001
+MAX_CHANGED_AREA = 0.8     # more than this: nothing stayed put (a recolor), so no fixed background
+
+
+def _same_framing(points_a, points_b, shape_a, shape_b):
+    """True when the matched points sit at the same pixels in both photos (no crop, zoom or
+    shift), which is what every pair of frames from a fixed camera looks like."""
+    return (shape_a == shape_b and len(points_a) >= 8
+            and float(np.median(np.abs(points_a - points_b).max(axis=1))) <= 2.0)
+
+
+def _gray(path, shape):
+    image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    return cv2.resize(image, (shape[1], shape[0]), interpolation=cv2.INTER_AREA)
+
+
+def _changed_region(path_a, path_b, shape):
+    """Where two same-framed photos differ, as a mask at SIFT's working size, or None when
+    nearly nothing or nearly everything changed (neither has a fixed background)."""
+    a, b = (cv2.GaussianBlur(_gray(path, shape), (5, 5), 0) for path in (path_a, path_b))
+    changed = (cv2.absdiff(a, b) > CHANGE_LEVEL).astype(np.uint8)
+    changed = cv2.morphologyEx(changed, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    if not MIN_CHANGED_AREA <= changed.mean() <= MAX_CHANGED_AREA:
+        return None
+    # Keypoints sit on edges, so grow the region to take in the ones on the subject's outline.
+    return cv2.dilate(changed, np.ones((15, 15), np.uint8))
+
+
+def _inside(features, mask):
+    keypoints, descriptors, shape = features
+    keep = [i for i, k in enumerate(keypoints)
+            if mask[min(int(k.pt[1]), shape[0] - 1), min(int(k.pt[0]), shape[1] - 1)]]
+    return [keypoints[i] for i in keep], (descriptors[keep] if keep else None), shape
+
+
+def _content_match(path_a, path_b):
+    """_best_match, minus any background the photos only share because the camera didn't move.
+    The last value says whether that background was set aside."""
+    points_a, points_b, shape_a, shape_b = _best_match(path_a, path_b)
+    if _same_framing(points_a, points_b, shape_a, shape_b):
+        changed = _changed_region(path_a, path_b, shape_a)
+        if changed is not None:
+            points_a, points_b = _ransac(_inside(_keypoints_for(path_a), changed),
+                                         _inside(_keypoints_for(path_b), changed))
+            return points_a, points_b, shape_a, shape_b, True
+    return points_a, points_b, shape_a, shape_b, False
+
+
 def keypoint_inliers(path_a, path_b):
-    """Keypoint matches consistent with one geometric transform, trying path_a mirrored too."""
-    return len(_best_match(path_a, path_b)[0])
+    """Keypoint matches consistent with one geometric transform, trying path_a mirrored too.
+    For frames from a fixed camera, only matches on what changed between them count."""
+    return len(_content_match(path_a, path_b)[0])
 
 
 def _box(points, shape):
@@ -119,7 +176,7 @@ def _box(points, shape):
 
 def match_regions(path_a, path_b):
     """Where the matched keypoints sit in each photo, as [x1, y1, x2, y2] fractions of its size."""
-    points_a, points_b, shape_a, shape_b = _best_match(path_a, path_b)
+    points_a, points_b, shape_a, shape_b, _ = _content_match(path_a, path_b)
     if not len(points_a):
         return None
     return _box(points_a, shape_a), _box(points_b, shape_b)
@@ -152,8 +209,12 @@ HASH_CONFIRM_SIMILARITY = 0.85
 def confirm_hash_pairs(pairs, embeddings):
     confirmed = []
     for a, b, distance in pairs:
-        similar = a in embeddings and b in embeddings and float(embeddings[a] @ embeddings[b]) >= HASH_CONFIRM_SIMILARITY
-        if similar or keypoint_inliers(a, b) >= HASH_CONFIRM_INLIERS:
+        points, _, _, _, fixed_camera = _content_match(a, b)
+        # A shared background fools the embedder as much as the hash, so it can't vouch for
+        # frames from a fixed camera; only keypoints on what changed can.
+        similar = (not fixed_camera and a in embeddings and b in embeddings
+                   and float(embeddings[a] @ embeddings[b]) >= HASH_CONFIRM_SIMILARITY)
+        if similar or len(points) >= HASH_CONFIRM_INLIERS:
             confirmed.append((a, b, distance))
     return confirmed
 

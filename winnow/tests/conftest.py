@@ -36,6 +36,14 @@ def blur(image):
     return cv2.GaussianBlur(image, (0, 0), 6)
 
 
+def fixed_camera(subject_seed, shift=0, size=160):
+    """A frame from a camera that never moves: the same busy background every time, with a
+    subject in the middle (a different one per seed, nudged sideways by `shift` pixels)."""
+    frame = scene(3, 720, 960)
+    frame[280:280 + size, 400 + shift:400 + shift + size] = cv2.resize(scene(subject_seed), (size, size))
+    return frame
+
+
 def product_shot(textured):
     """A dark product on white: textured and flat versions have the same block means, so the
     perceptual hash sees them as identical (distance 0), like the collisions found in Imagenette."""

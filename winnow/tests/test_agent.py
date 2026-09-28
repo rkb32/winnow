@@ -209,9 +209,10 @@ def test_only_borderline_edited_copies_are_reviewed_leaks_first(save):
 
 
 def test_a_match_confined_to_a_small_patch_is_reviewed_despite_many_inliers(save):
-    # Two different photos sharing one small region, like the same watermark or brochure layout.
+    # Two different photos sharing one small region, like the same logo in a different spot.
+    # (In the same spot it's a fixed background, which the detector itself now sets aside.)
     source, other = scene(22), scene(23)
-    other[40:200, 40:200] = source[40:200, 40:200]
+    other[150:310, 250:410] = source[40:200, 40:200]
     shared_patch = finding(save("a.png", source), save("b.png", other), 80)
     assert agent.select_for_review([shared_patch]) == [shared_patch]
 
