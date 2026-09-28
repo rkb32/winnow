@@ -278,37 +278,42 @@
   </div>
 
   <section id="leak-section" hidden>
-    <h2>Train/Test Leaks</h2>
-    <p class="h2-sub">Test photos that also appear in your training photos. The model has already seen them, so its test score will look better than it really is.</p>
-    <p class="fix"><b>Fix:</b> delete the training copy of each pair (the download above does this), then re-measure your test score.</p>
+    <h2 id="leak-title">Train/Test Leaks</h2>
+    <p class="h2-sub" id="leak-sub">Test photos that also appear in your training photos. The model has already seen them, so its test score will look better than it really is.</p>
+    <p class="fix" id="leak-fix" hidden><b>Fix:</b> delete the training copy of each pair (the download above does this), then re-measure your test score.</p>
+    <p class="empty" id="leak-clean" hidden>Train/Test Leaks &mdash; none found.</p>
     <div id="leaks"></div>
   </section>
 
-  <section>
-    <h2>Duplicate Photos</h2>
-    <p class="h2-sub">Two files that are really the same picture, keeping both can trick a model into looking more accurate than it really is.</p>
+  <section id="dup-section">
+    <h2 id="dup-title">Duplicate Photos</h2>
+    <p class="h2-sub" id="dup-sub">Two files that are really the same picture, keeping both can trick a model into looking more accurate than it really is.</p>
     <p class="fix" id="dup-fix" hidden><b>Fix:</b> keep one photo from each pair. The download above drops the extras Claude marked Remove.</p>
+    <p class="empty" id="dup-clean" hidden>Duplicate Photos &mdash; none found.</p>
     <div id="duplicates"></div>
   </section>
 
-  <section>
-    <h2>Blurry Photos</h2>
-    <p class="h2-sub">Too out of focus to be useful for training.</p>
+  <section id="blurry-section">
+    <h2 id="blurry-title">Blurry Photos</h2>
+    <p class="h2-sub" id="blurry-sub">Too out of focus to be useful for training.</p>
     <p class="fix" id="blurry-fix" hidden><b>Fix:</b> drop them, or retake them if that class is short on examples.</p>
+    <p class="empty" id="blurry-clean" hidden>Blurry Photos &mdash; none found.</p>
     <div id="blurry"></div>
   </section>
 
-  <section>
-    <h2>Rotation Problems</h2>
-    <p class="h2-sub">Photos with a hidden "rotate me" tag. If your labels were drawn on the unrotated photo, they may no longer line up. Winnow can't see your label files, so these are worth checking by hand.</p>
+  <section id="exif-section">
+    <h2 id="exif-title">Rotation Problems</h2>
+    <p class="h2-sub" id="exif-sub">Photos with a hidden "rotate me" tag. If your labels were drawn on the unrotated photo, they may no longer line up. Winnow can't see your label files, so these are worth checking by hand.</p>
     <p class="fix" id="exif-fix" hidden><b>Fix:</b> open a few in your labeling tool. If the boxes are off, re-save the photos with rotation applied (for example Pillow's <code>ImageOps.exif_transpose</code>) and redraw those boxes.</p>
+    <p class="empty" id="exif-clean" hidden>Rotation Problems &mdash; none found.</p>
     <div id="exif"></div>
   </section>
 
   <section id="unreadable-section" hidden>
-    <h2>Couldn't Be Scanned</h2>
-    <p class="h2-sub">Files that failed to open, likely corrupted or not actually images.</p>
+    <h2 id="unreadable-title">Couldn't Be Scanned</h2>
+    <p class="h2-sub" id="unreadable-sub">Files that failed to open, likely corrupted or not actually images.</p>
     <p class="fix" id="unreadable-fix" hidden><b>Fix:</b> re-export or re-download these files, a model can't learn from them.</p>
+    <p class="empty" id="unreadable-clean" hidden>Couldn't Be Scanned &mdash; none found.</p>
     <div id="unreadable"></div>
   </section>
 </div>
@@ -418,8 +423,16 @@
     return overrides.get(decision.file) || decision.action;
   }
 
-  function renderEmpty(container, text) {
-    container.innerHTML = `<div class="empty">${text}</div>`;
+  // A category with findings shows its full header, description, and fix. A clean category
+  // collapses to one muted line (still proof it was checked) unless the whole scan is clean,
+  // in which case the headline alone says so and every section disappears.
+  function setSection(prefix, count, allClean) {
+    const clean = !count;
+    document.getElementById(`${prefix}-section`).hidden = clean && allClean;
+    document.getElementById(`${prefix}-title`).hidden = clean;
+    document.getElementById(`${prefix}-sub`).hidden = clean;
+    document.getElementById(`${prefix}-fix`).hidden = clean;
+    document.getElementById(`${prefix}-clean`).hidden = !clean;
   }
 
   function clearResults(message) {
@@ -464,14 +477,11 @@
     const dupCount = duplicatePairs.length + similarPairs.length;
     const totalIssues = leakCount + dupCount + blurryImages.length + exifImages.length + unreadableImages.length;
 
-    // The fix instructions only make sense once that category actually found something.
-    document.getElementById("dup-fix").hidden = !dupCount;
-    document.getElementById("blurry-fix").hidden = !blurryImages.length;
-    document.getElementById("exif-fix").hidden = !exifImages.length;
-    document.getElementById("unreadable-fix").hidden = !unreadableImages.length;
-    // Unlike the other sections, "couldn't be scanned" is an edge case, not a feature to
-    // advertise up front, so hide the whole section until a scan actually finds one.
-    document.getElementById("unreadable-section").hidden = !unreadableImages.length;
+    const allClean = totalIssues === 0;
+    setSection("dup", dupCount, allClean);
+    setSection("blurry", blurryImages.length, allClean);
+    setSection("exif", exifImages.length, allClean);
+    setSection("unreadable", unreadableImages.length, allClean);
 
     document.getElementById("headline").innerHTML = totalIssues === 0
       ? `<b>Looks clean.</b> No leaks, duplicates, blur, or rotation problems found.`
@@ -538,7 +548,7 @@
     }
 
     if (data.leaked_pairs !== undefined) {
-      leakSection.hidden = false;
+      setSection("leak", leakCount, allClean);
       const leakCard = (train, test, chipLabel, detail) => {
         const r = withAi(`<span class="chip bad">${chipLabel}</span>`, train,
           "Remove one copy, usually the training one, so your test score stays honest.");
@@ -555,7 +565,6 @@
         leakCard(train, test, "Leak", hashDetail(dist)));
       similarLeaks.forEach(([train, test, sim, inliers]) =>
         leakCard(train, test, "Leak, edited copy", editedCopyDetail(sim, inliers)));
-      if (!leakCount) renderEmpty(leakContainer, "None found, your test photos don't appear in the training photos.");
     }
 
     if (duplicatePairs.length) {
@@ -584,8 +593,6 @@
         r.collapse
       ));
     });
-    if (!dupCount) renderEmpty(dup, "None found, no duplicates in this batch.");
-
     if (blurryImages.length) {
       blurryImages.forEach(([p, sharpness]) => {
         const r = withAi(`<span class="chip bad">Too blurry</span>`, p, null);
@@ -597,7 +604,7 @@
           r.collapse
         ));
       });
-    } else renderEmpty(blur, "None found, every photo is sharp enough to use.");
+    }
 
     if (exifImages.length) {
       exifImages.forEach(([p, orientation, swapsDims]) => {
@@ -613,7 +620,7 @@
           r.collapse
         ));
       });
-    } else renderEmpty(exif, "None found, no rotation conflicts.");
+    }
 
     if (unreadableImages.length) {
       unreadableImages.forEach(([p]) => {
@@ -622,7 +629,7 @@
           "This file may be corrupted, or it isn't actually a valid image."
         ));
       });
-    } else renderEmpty(unreadable, "None, every file opened fine.");
+    }
 
     updateDownloadBar();
   }
