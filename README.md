@@ -28,7 +28,7 @@ Claude (Haiku 4.5 on Bedrock) then reviews every finding and decides what to qua
 
 Two ways in, one pipeline: an operator with AWS access drops photos in `samples/` and EventBridge triggers a scan (Path A), or anyone uses the public site, which hands out presigned S3 upload links and starts a scoped scan through a Lambda Function URL (Path B). Both land in the same ECS Fargate task — detectors, then the Claude agent, then results in S3 — and both are read back through the same read-only CloudFront-served dashboard.
 
-Uploaded photos are never readable publicly (CloudFront can only read `dashboard.html` and `results/`), and S3 lifecycle rules delete uploads after 1 day and reports after 7.
+Uploaded photos are never readable publicly (CloudFront can only read `dashboard.html` and `results/`), and S3 lifecycle rules delete uploads after 1 day and reports after 7. An empty per-scan marker (date and random session id, nothing else) is kept 90 days to count usage.
 
 IAM is split into three roles by who needs what: an execution role (lets ECS pull the image and ship logs), a task role (lets the running code read/write S3 and call Bedrock, scoped to one bucket), and an EventBridge invocation role (lets the trigger call `ecs:RunTask`). No role does more than one job.
 
