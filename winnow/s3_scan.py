@@ -25,6 +25,11 @@ def local_name(key, prefix, alias_root=None):
     return ((alias_root + key[len(prefix):]) if alias_root else key).replace("/", "__")
 
 
+def public_key(key, real_prefix, alias_prefix):
+    """A key as it may appear in a public report: under the alias, so a guest's folder never shows."""
+    return alias_prefix + key[len(real_prefix):] if alias_prefix and key.startswith(real_prefix) else key
+
+
 def download_bucket_prefix(bucket, prefix, dest_dir, alias_root=None):
     s3 = boto3.client("s3")
     paginator = s3.get_paginator("list_objects_v2")
@@ -88,8 +93,8 @@ def run(bucket, prefix, test_prefix, quarantine_prefix, labels_prefix=None, alia
         combined["agent_truncated"] = len(build_findings_summary(result)) > MAX_FINDINGS
         try:
             combined["agent_decisions"] = decide_actions(result)
-            combined["quarantined"] = apply_quarantine(
-                bucket, combined["agent_decisions"], key_by_local_path, quarantine_prefix)
+            moved = apply_quarantine(bucket, combined["agent_decisions"], key_by_local_path, quarantine_prefix)
+            combined["quarantined"] = [public_key(k, quarantine_prefix, aliased("quarantine")) for k in moved]
         except Exception as e:
             print("Agent step failed:", e)
             combined["agent_error"] = True

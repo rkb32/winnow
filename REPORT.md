@@ -156,7 +156,7 @@ The thresholds were chosen from a grid over edge strength and agreement. Looser 
 
 *Same-moment shots and label problems are tested but not measured.* No photo in Imagenette has an EXIF capture time, and no public dataset with capture times and same-moment labels was at hand, so the 3-second gap is a judgment call, not a calibrated threshold. The label checks are unit-tested on YOLO, Pascal VOC and COCO files with planted mistakes and have not been run on a real labeled dataset. To check that the new tests can fail, seventeen deliberate bugs were introduced one at a time across these modules (a zero burst gap, a disabled out-of-bounds check, an inverted p-value, a removed marker, a removed label-size cap, an advisory check allowed to abort the scan, among others). The first pass missed two, whose tests leaned on the constant being mutated; they were rewritten with fixed numbers, and the suite then caught all seventeen.
 
-**Test suite.** 133 pytest tests run inside the exact production Docker image (`docker build --target test winnow/`): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id-to-filename mapping, truncated replies, the findings cap), the visual review loop (per-pair zoom budgets, the forced final decision, bad zoom requests returned to the model, the can't-clear-a-flag rule), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps). To confirm the suite has real detection power rather than passing trivially, three deliberate bugs were introduced one at a time — a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap — and the suite caught each one.
+**Test suite.** 135 pytest tests run inside the exact production Docker image (`docker build --target test winnow/`): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id-to-filename mapping, truncated replies, the findings cap), the visual review loop (per-pair zoom budgets, the forced final decision, bad zoom requests returned to the model, the can't-clear-a-flag rule), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps). To confirm the suite has real detection power rather than passing trivially, three deliberate bugs were introduced one at a time — a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap — and the suite caught each one.
 
 ## 7. Limitations and future work
 
@@ -188,7 +188,7 @@ The thresholds were chosen from a grid over edge strength and agreement. Looser 
 
 - `winnow/` — the pipeline: detectors, S3 glue, Bedrock agent, Dockerfile, ECS task definition, dashboard
 - `winnow/api/` — the public upload API (Lambda) and its deploy script
-- `winnow/tests/` — the 133-test suite, run inside the production image
+- `winnow/tests/` — the 135-test suite, run inside the production image
 - `spike/` — the original dependency spike proving OpenCV 5 + `img_hash` on ARM64
 - `imagenette_exp/` — every evaluation script and result referenced in §6
 - `proposal.md` — the original competition proposal
