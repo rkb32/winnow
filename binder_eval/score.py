@@ -36,6 +36,7 @@ def main():
     parser.add_argument("dataset")
     parser.add_argument("inliers")
     parser.add_argument("--out", default="winnow_flagged_pairs.csv")
+    parser.add_argument("--templates-out", help="also score with shared-template matches set aside, and write that list here")
     options = parser.parse_args()
     data, inliers_file, out_file = (os.path.abspath(os.path.join(START, p)) for p in (options.dataset, options.inliers, options.out))
 
@@ -94,6 +95,37 @@ def main():
         for t, v in sorted(flagged, key=lambda p: (-inliers[p], p)):
             writer.writerow([t, v, "perceptual hash" if (t, v) in by_hash else "embedding + keypoints", inliers[t, v], CLAUDE_CALL])
     print(f"\nwrote {len(flagged)} rows to {out_file}")
+
+    if options.templates_out:
+        with_templates(options.templates_out, train_paths, val_paths, path_of, inliers, by_hash, flagged, planted, key)
+
+
+def with_templates(out_path, train_paths, val_paths, path_of, inliers, by_hash, flagged, planted, key):
+    """The same flags after Winnow sets aside matches made of a template shared with other pages."""
+    from semantic import set_aside_templates
+    out_file = os.path.abspath(os.path.join(START, out_path))
+    to_check = [(path_of["train", t], path_of["val", v], 0.0, inliers[t, v]) for t, v in sorted(flagged - by_hash)]
+    kept, aside = set_aside_templates(to_check, train_paths + val_paths)
+    kept_pairs = by_hash | {(page(a), page(b)) for a, b, *_ in kept}
+    distinct = {(page(a), page(b)): d for a, b, _, _, d in aside}
+    outside = sorted(p for p in kept_pairs if p not in planted)
+    print("\nWith matches made of a shared template set aside:")
+    for kind in ["shared_1", "shared_2", "shared_3", "reshot", "exact_copy"]:
+        pairs = [(r["train_page"], r["val_page"]) for r in key if r["type"] == kind and (r["train_page"], r["val_page"]) in inliers]
+        print(f"  {kind:<11} {sum(p in kept_pairs for p in pairs):>2}/{len(pairs)}")
+    print(f"  planted pairs still flagged {sum(p in kept_pairs for p in planted if p in inliers)}/{len(planted)}; "
+          f"flagged outside the key {len(outside)}; set aside {len(aside)} "
+          f"(planted among them: {sum(p in planted for p in distinct)})")
+    with open(out_file, "w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["page_a", "page_b", "check", "matching_keypoints", "distinct_keypoints", "claude_call"])
+        for t, v in sorted(flagged, key=lambda p: (-inliers[p], p)):
+            if (t, v) in distinct:
+                writer.writerow([t, v, "shared template (set aside)", inliers[t, v], distinct[t, v], "not reviewed (set aside)"])
+            else:
+                check = "perceptual hash" if (t, v) in by_hash else "embedding + keypoints"
+                writer.writerow([t, v, check, inliers[t, v], "", CLAUDE_CALL])
+    print(f"wrote {len(flagged)} rows to {out_file}")
 
 
 if __name__ == "__main__":

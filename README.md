@@ -12,7 +12,7 @@ Point it at a folder of training images and it flags the things that quietly cor
 |---|---|---|
 | Train/test leaks | Both duplicate checks below, run between the training and test sets | A test photo the model has already seen inflates its score without it generalizing any better |
 | Exact and compressed copies | Perceptual hash (`cv2.img_hash.BlockMeanHash`), distance ≤ 5, confirmed by ≥ 8 shared SIFT keypoints or ≥ 0.85 embedding similarity | Duplicates overweight some examples and hide leaks. The confirmation exists because raw hashes collide on low-texture photos (see the full audit below) |
-| Edited copies (crops, mirrors, recolors) | Two stages: MobileNetV2 embeddings through OpenCV 5's `cv2.dnn` nominate look-alikes (cosine ≥ 0.80), then SIFT keypoints + RANSAC confirm ≥ 25 points agree on one geometric transform | The perceptual hash catches 0% of cropped or mirrored copies (see Evaluation). Embeddings alone flag different photos of the same kind of thing; the geometric check is what tells "same photo" from "same subject" |
+| Edited copies (crops, mirrors, recolors) | Two stages: MobileNetV2 embeddings through OpenCV 5's `cv2.dnn` nominate look-alikes (cosine ≥ 0.80), then SIFT keypoints + RANSAC confirm ≥ 25 points agree on one geometric transform. In sets of 100+ photos, a keypoint that also matches in 3 of 40 unrelated photos is a printed template and doesn't count; a pair left with under 20 other keypoints is set aside, not dropped | The perceptual hash catches 0% of cropped or mirrored copies (see Evaluation). Embeddings alone flag different photos of the same kind of thing; the geometric check is what tells "same photo" from "same subject" |
 | Blurry images | Laplacian variance ≤ 200 | Out-of-focus images add noise instead of signal |
 | Risky EXIF orientation | Orientation tag ≠ 1 (normal) | Labels drawn on the unrotated photo may no longer line up. Winnow flags the risk, and with label files it confirms it (see label problems below) |
 | Train/test shift | The two sets' mean MobileNetV2 embeddings, compared by squared distance. The p-value comes from shuffling which photos count as test 2,000 times; flagged at p ≤ 0.05, needs ≥ 5 photos in each set | A test set drawn from a different kind of picture gives a score that says little about real use, even with no duplicate anywhere |
@@ -67,7 +67,7 @@ For the bulk S3 path, upload your photos to `samples/`, then upload an empty `sa
 docker build --target test winnow/
 ```
 
-Runs 135 tests inside the exact runtime image (same OpenCV 5 build, same embedding model): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id mapping, cut-off replies, the findings cap), the visual review loop (per-pair zoom budgets, the forced final decision, bad zoom requests bounced back to the model, the rule that Claude can dispute but not clear a flag), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps, label-file limits). Production builds skip this stage, so the deployed image carries no test code. To check the tests can actually fail, deliberate bugs were introduced one at a time (a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap, then seventeen more across the newer checks and seven across the kept-photo routes), and the suite caught each one.
+Runs 139 tests inside the exact runtime image (same OpenCV 5 build, same embedding model): every detector, the full `scan_folder` pipeline, Claude's decision handling against a stubbed Bedrock (id mapping, cut-off replies, the findings cap), the visual review loop (per-pair zoom budgets, the forced final decision, bad zoom requests bounced back to the model, the rule that Claude can dispute but not clear a flag), and the upload API's guardrails (hostile filenames, session-id validation, daily and concurrency caps, label-file limits). Production builds skip this stage, so the deployed image carries no test code. To check the tests can actually fail, deliberate bugs were introduced one at a time (a broken hash threshold, a disabled keypoint check, an off-by-one in the daily cap, then seventeen more across the newer checks and seven across the kept-photo routes), and the suite caught each one.
 
 Dependencies are pinned in `winnow/requirements.txt`, and the embedding model is downloaded at build time with a checksum check (`ADD --checksum`) then trimmed by `winnow/models/make_embedder.py`.
 
@@ -108,6 +108,19 @@ Version 1 was worse than no review: it treated burst shots of the same moment as
 
 An earlier, smaller check (`run_experiment.py`): 10/10 planted exact leaks caught across 130 photos, 0 false positives.
 
+### An outside benchmark, and the fix it led to
+
+Jesse Diaz built 300 synthetic Pokémon binder pages (240 train, 60 val) with 34 planted train/val overlaps and an answer key, and shared it for private evaluation (`binder_eval/`). At Winnow's defaults it found 31 of the 34 planted pairs but flagged 742 of the 14,366 unrelated pairs (5.2%), so only 4% of its flags were real: different cards share a printed frame, header and symbols, and no keypoint bar separates the two groups (at 60 keypoints: 22 of 34 found, 10 false alarms).
+
+Winnow now checks each candidate pair's matching keypoints against 40 unrelated photos, treats any that also match in 3 or more as a printed template, and keeps a pair only if 20 template-free keypoints remain (`set_aside_templates` in `winnow/semantic.py`). Pairs that fail are listed in the scan's `template_matches`, not deleted.
+
+| | Planted pairs flagged (of 34) | Flags outside the key | Set aside |
+|---|---|---|---|
+| Before | 31 | 742 | none |
+| After | 30 | 31 | 712 (1 planted) |
+
+On Imagenette's hand-verified audit flags (`imagenette_exp/template_eval.py`), all 76 real leaks stay flagged and 8 of the 19 look-alikes are set aside (5 to 8, depending on which 40 photos are drawn). The two settings were chosen on the binder benchmark itself, so that result is in-sample; Imagenette only shows that real leaks aren't lost.
+
 ### The five newest checks, measured where the data allowed
 
 **Train/test shift** (`imagenette_exp/shift_eval.py`). Share of trials where the check fired, 300 trials per cell, sampled from Imagenette:
@@ -147,7 +160,7 @@ The thresholds trade sensitivity for silence: a clear watermark on every photo i
 - `winnow/api/` — the upload API Lambda and its one-time deploy script
 - `spike/` — the original dependency spike proving OpenCV 5 + `img_hash` work on ARM64 before building anything else
 - `imagenette_exp/` — the real-data evaluations: leak impact, hash vs. embedding comparison, keypoint-threshold calibration, the full audit, the visual-review band and evaluation, and the train/test shift and shared-overlay calibrations
-- `binder_eval/` — an outside test on Jesse Diaz's planted-overlap binder benchmark: 31 of 34 planted pairs found, and 742 false alarms from shared printed templates (see its README)
+- `binder_eval/` — an outside test on Jesse Diaz's planted-overlap binder benchmark: before the shared-template filter, 31 of 34 planted pairs found and 742 false alarms; after, 30 of 34 and 31 (see its README)
 - `proposal.md` / `Winnow-OpenCV-2026-Proposal.pdf` — the original competition proposal
 
 ## License
@@ -159,7 +172,7 @@ Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE) for the third-pa
 - **Duplicate comparison is O(n²)**: every image is hashed against every other image. Fine for hundreds of images, too slow for a real dataset of thousands. At scale this would need an approximate-nearest-neighbor index (e.g. FAISS or Annoy) instead of brute-force pairwise comparison.
 - **Some thresholds are calibrated, others aren't**: the edited-copy thresholds (0.80 similarity, 25 keypoints) were calibrated on Imagenette, which is still one dataset. `sharpness ≤ 200` is a fixed number, so it depends on resolution: it can flag plain-background shots and miss soft focus in large photos. A per-dataset relative threshold would be better.
 - **Flags are for human review, not automatic deletion, at dataset scale**: 17% of the keypoint-stage flags in the full audit (20% before the fixed-camera check) were look-alikes sharing a stock template or landmark. The website's previews and Keep/Remove overrides exist for exactly this.
-- **Shared printed templates fool the keypoint check**: on an outside benchmark of 300 synthetic binder pages with planted overlaps (`binder_eval/`), Winnow found 31 of 34 planted pairs but also flagged 742 of 14,366 unrelated pairs (5.2%), because different cards share a printed frame, header and symbols. No keypoint bar separates them (at 60 it finds 22 of 34 with 10 false alarms), and with hundreds of findings Claude's visual review is off. A fix would have to tell a shared object from a shared layout, for example by requiring matches to spread across the artwork and not only the frame.
+- **The shared-template filter only applies to sets of 100+ photos, and it is tuned on one benchmark**: it needs unrelated photos to sample, so the website's 20-photo scans never use it. Its two settings (3 of 40 photos, 20 remaining keypoints) were picked on Jesse Diaz's binder benchmark (`binder_eval/`) and only re-checked on Imagenette, where it keeps every real leak but sets aside just 5 to 8 of 19 look-alikes. It has not been run on a dataset of near-identical frames (video, a fixed camera), where a real copy's keypoints also match many other frames and could be set aside. That is why set-aside pairs are kept in the report and not deleted, though the website does not show them yet.
 - **The fixed-camera check has edges, and it's only tested on synthetic frames**: a subject under ~40px in a 1000px frame still reads as a copy (the cutoff, `MIN_CHANGED_AREA`, is set so frames that differ only by a ticking timestamp still count as duplicates), and a watermark added to an otherwise identical photo is now caught by the hash check alone. It hasn't been run on real conveyor or CCTV footage yet.
 - ~~The keypoint check recomputes features per pair~~ — **fixed**: SIFT features are now cached per photo (`_keypoints_for` in `winnow/semantic.py`), so a photo compared against many others only pays that cost once instead of once per pair. This was the dominant cost in the full audit below.
 - **The visual review is only measured at 160px**: all 51 evaluation pairs are Imagenette's small version, and uploads to the site are usually full resolution, where zooming has more to find. Its remaining misses are "same product model, different product photo" (3 chainsaw catalog pairs), the same church on a different day, and two garbage trucks. It only runs on scans with ≤ 8 findings and at most 2 pairs per scan, which keeps a scan's worst-case cost close to the text-only one.

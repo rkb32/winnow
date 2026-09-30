@@ -8,7 +8,8 @@ from exif_conflict import get_orientation, has_risky_orientation, swaps_dimensio
 from labels import check_labels
 from overlay import find_overlays
 from provenance import find_provenance_flags
-from semantic import compute_embeddings, confirm_hash_pairs, find_semantic_leaks, find_semantic_pairs
+from semantic import (compute_embeddings, confirm_hash_pairs, find_semantic_leaks, find_semantic_pairs,
+                      set_aside_templates)
 from shift import check_shift
 
 LABEL_EXTENSIONS = (".txt", ".xml", ".json")
@@ -83,9 +84,17 @@ def scan_folder(folder_path, test_folder_path=None, label_folder_path=None):
         result["similar_leaks"] = find_semantic_leaks(embeddings, test_embeddings, result["leaked_pairs"])
         result["shift"] = _advisory(check_shift, None, embeddings, test_embeddings)
 
-    # The checks below only report; none of them removes anything.
+    # Matches made mostly of a printed template shared with other photos are set aside, not dropped.
     every_photo = readable_paths + list(test_embeddings)
-    matched = [p for key in ("duplicate_pairs", "similar_pairs", "leaked_pairs", "similar_leaks") for p in result.get(key, [])]
+    look_alikes = []
+    for key, kind in (("similar_pairs", "duplicate"), ("similar_leaks", "leak")):
+        if key in result:
+            result[key], aside = _advisory(set_aside_templates, (result[key], []), result[key], every_photo)
+            look_alikes += [(*pair, kind) for pair in aside]
+    result["template_matches"] = look_alikes
+
+    # The checks below only report; none of them removes anything.
+    matched =[p for key in ("duplicate_pairs", "similar_pairs", "leaked_pairs", "similar_leaks") for p in result.get(key, [])]
     result["bursts"] = _advisory(find_bursts, [], readable_paths, test_paths, matched)
     result["overlays"] = _advisory(find_overlays, [], every_photo)
     result["ai_generated_images"], result["stock_images"] = _advisory(find_provenance_flags, ([], []), every_photo)
@@ -103,6 +112,7 @@ if __name__ == "__main__":
     print("Blurry images:            ", result["blurry_images"])
     print("Risky EXIF orientation:   ", result["risky_orientation_images"])
     print("Unreadable images:        ", result["unreadable_images"])
+    print("Shared-template matches:  ", result["template_matches"])
     print("Same-moment groups:       ", result["bursts"])
     print("Shared overlays:          ", result["overlays"])
     print("AI-generated markers:     ", result["ai_generated_images"])

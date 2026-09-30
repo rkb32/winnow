@@ -6,6 +6,7 @@
    garbage trucks score ~0.9); only a real copy has hundreds of points that line up.
 """
 import os
+import random
 from functools import lru_cache
 
 import cv2
@@ -71,11 +72,11 @@ def _keypoints_for(path, flipped=False):
     return _keypoints(image)
 
 
-_NO_MATCH = (np.empty((0, 2), np.float32), np.empty((0, 2), np.float32))
+_NO_MATCH = (np.empty((0, 2), np.float32), np.empty((0, 2), np.float32), np.empty((0, 128), np.float32))
 
 
-def _ransac(features_a, features_b):
-    """The matched keypoints consistent with one homography, as (points in a, points in b)."""
+def _ransac_full(features_a, features_b):
+    """The matched keypoints consistent with one homography: (points in a, points in b, a's descriptors)."""
     (kp_a, des_a, _), (kp_b, des_b, _) = features_a, features_b
     if des_a is None or des_b is None or len(kp_a) < 2 or len(kp_b) < 2:
         return _NO_MATCH
@@ -89,20 +90,30 @@ def _ransac(features_a, features_b):
     if mask is None:
         return _NO_MATCH
     keep = mask.ravel().astype(bool)
-    return src[keep], dst[keep]
+    return src[keep], dst[keep], des_a[np.array([m.queryIdx for m in good])[keep]]
 
 
-def _best_match(path_a, path_b):
-    """Inliers between the photos, trying path_a mirrored too; path_a's points come back un-mirrored."""
+def _ransac(features_a, features_b):
+    """The matched keypoints consistent with one homography, as (points in a, points in b)."""
+    return _ransac_full(features_a, features_b)[:2]
+
+
+def _best_match_full(path_a, path_b):
+    """Inliers between the photos, trying path_a mirrored too; path_a's points come back un-mirrored.
+    Returns (points in a, points in b, shape a, shape b, a's descriptors for those keypoints)."""
     features_b = _keypoints_for(path_b)
     features_a = _keypoints_for(path_a)
-    straight = _ransac(features_a, features_b)
-    mirrored = _ransac(_keypoints_for(path_a, flipped=True), features_b)
+    straight = _ransac_full(features_a, features_b)
+    mirrored = _ransac_full(_keypoints_for(path_a, flipped=True), features_b)
     if len(mirrored[0]) > len(straight[0]):
         points_a = mirrored[0].copy()
         points_a[:, 0] = features_a[2][1] - 1 - points_a[:, 0]
-        return points_a, mirrored[1], features_a[2], features_b[2]
-    return straight[0], straight[1], features_a[2], features_b[2]
+        return points_a, mirrored[1], features_a[2], features_b[2], mirrored[2]
+    return straight[0], straight[1], features_a[2], features_b[2], straight[2]
+
+
+def _best_match(path_a, path_b):
+    return _best_match_full(path_a, path_b)[:4]
 
 
 # A fixed camera repeats its background pixel for pixel in every frame, so whole-frame SIFT
@@ -148,17 +159,22 @@ def _inside(features, mask):
     return [keypoints[i] for i in keep], (descriptors[keep] if keep else None), shape
 
 
-def _content_match(path_a, path_b):
+def _content_match_full(path_a, path_b):
     """_best_match, minus any background the photos only share because the camera didn't move.
-    The last value says whether that background was set aside."""
-    points_a, points_b, shape_a, shape_b = _best_match(path_a, path_b)
+    The fifth value says whether that background was set aside; the sixth is path_a's descriptors
+    for the keypoints that count."""
+    points_a, points_b, shape_a, shape_b, descriptors = _best_match_full(path_a, path_b)
     if _same_framing(points_a, points_b, shape_a, shape_b):
         changed = _changed_region(path_a, path_b, shape_a)
         if changed is not None:
-            points_a, points_b = _ransac(_inside(_keypoints_for(path_a), changed),
-                                         _inside(_keypoints_for(path_b), changed))
-            return points_a, points_b, shape_a, shape_b, True
-    return points_a, points_b, shape_a, shape_b, False
+            points_a, points_b, descriptors = _ransac_full(_inside(_keypoints_for(path_a), changed),
+                                                            _inside(_keypoints_for(path_b), changed))
+            return points_a, points_b, shape_a, shape_b, True, descriptors
+    return points_a, points_b, shape_a, shape_b, False, descriptors
+
+
+def _content_match(path_a, path_b):
+    return _content_match_full(path_a, path_b)[:5]
 
 
 def keypoint_inliers(path_a, path_b):
@@ -217,6 +233,56 @@ def confirm_hash_pairs(pairs, embeddings):
         if similar or len(points) >= HASH_CONFIRM_INLIERS:
             confirmed.append((a, b, distance))
     return confirmed
+
+
+# A printed template (a card frame, a form header, a stock-photo banner) repeats across many
+# different photos, so its keypoints match "everywhere" and can make two different photos look like
+# a copy. A keypoint that also matches in several unrelated photos is a template, not evidence, and a
+# pair is judged on the keypoints that are left. Calibrated on Jesse Diaz's binder benchmark
+# (binder_eval/) and checked against the hand-verified Imagenette audit (imagenette_exp/).
+TEMPLATE_REFERENCES = 40         # unrelated photos each pair's keypoints are checked against
+TEMPLATE_MATCHES = 3             # a keypoint that matches in this many of them is a template
+MIN_DISTINCT_INLIERS = 20        # keypoints left, template ones set aside, for a pair to stay a copy
+MIN_PHOTOS_FOR_TEMPLATES = 100   # smaller sets have too few unrelated photos to tell a template
+
+
+def distinct_inliers(path_a, path_b, reference_paths):
+    """How many of the pair's matching keypoints do not also match in the reference photos."""
+    descriptors = _content_match_full(path_a, path_b)[5]
+    if not len(descriptors):
+        return 0
+    seen_elsewhere = np.zeros(len(descriptors), int)
+    for reference in reference_paths:
+        des_ref = _keypoints_for(reference)[1]
+        if des_ref is None or len(des_ref) < 2:
+            continue
+        seen_elsewhere += np.array([len(p) == 2 and p[0].distance < 0.75 * p[1].distance
+                                    for p in _matcher.knnMatch(descriptors, des_ref, k=2)], int)
+    return int((seen_elsewhere < TEMPLATE_MATCHES).sum())
+
+
+def set_aside_templates(pairs, all_paths):
+    """Splits edited-copy findings (a, b, similarity, inliers) into (kept, look_alikes).
+
+    A look-alike is a pair whose matches are mostly a template shared with other photos. It is
+    returned with its count of distinct keypoints (a, b, similarity, inliers, distinct) instead of
+    being dropped, so it can still be shown. Each pair is checked against a fixed random sample of
+    the other photos, so a rerun gives the same answer. Sets too small to sample from are left alone.
+    """
+    if len(all_paths) < MIN_PHOTOS_FOR_TEMPLATES:
+        return list(pairs), []
+    others = sorted(all_paths)
+    kept, look_alikes = [], []
+    for pair in pairs:
+        a, b = pair[:2]
+        pool = [p for p in others if p != a and p != b]
+        references = random.Random(f"{a}|{b}").sample(pool, min(TEMPLATE_REFERENCES, len(pool)))
+        distinct = distinct_inliers(a, b, references)
+        if distinct >= MIN_DISTINCT_INLIERS:
+            kept.append(pair)
+        else:
+            look_alikes.append((*pair, distinct))
+    return kept, look_alikes
 
 
 def find_semantic_pairs(embeddings, already_found):

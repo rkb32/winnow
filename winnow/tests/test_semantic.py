@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 
 from conftest import crop, fixed_camera, names, scene
-from semantic import (MIN_INLIERS, compute_embeddings, confirm_hash_pairs, find_semantic_leaks,
-                      find_semantic_pairs, keypoint_inliers, match_regions)
+from semantic import (MIN_DISTINCT_INLIERS, MIN_INLIERS, MIN_PHOTOS_FOR_TEMPLATES, compute_embeddings,
+                      confirm_hash_pairs, find_semantic_leaks, find_semantic_pairs, keypoint_inliers,
+                      match_regions, set_aside_templates)
 
 
 def test_mirrored_copy_is_found_and_different_photo_is_not(save):
@@ -77,3 +78,51 @@ def test_unreadable_files_are_skipped(save, tmp_path):
     bad = tmp_path / "bad.png"
     bad.write_bytes(b"junk")
     assert list(compute_embeddings([str(bad), save("ok.png", scene(17))])) == [save("ok.png", scene(17))]
+
+
+# --- shared printed templates ---
+
+TEMPLATE = scene(999, 200, 150)      # a printed frame every photo carries, like the frame of a trading card
+
+
+def templated_photo(seed):
+    """A photo of its own, with the shared template pasted somewhere different each time."""
+    image = scene(seed)
+    x, y = 20 + (seed * 37) % 300, 20 + (seed * 53) % 130
+    image[y:y + 200, x:x + 150] = TEMPLATE
+    return image
+
+
+def templated_set(save, count=MIN_PHOTOS_FOR_TEMPLATES + 5):
+    return [save(f"p{i}.png", templated_photo(i + 1)) for i in range(count)]
+
+
+def test_photos_that_only_share_a_template_are_set_aside(save):
+    paths = templated_set(save)
+    n = keypoint_inliers(paths[0], paths[1])
+    assert n >= MIN_INLIERS      # the template alone is enough to look like a copy
+    kept, look_alikes = set_aside_templates([(paths[0], paths[1], 0.9, n)], paths)
+    assert kept == []
+    (a, b, similarity, inliers, distinct), = look_alikes
+    assert (a, b, similarity, inliers) == (paths[0], paths[1], 0.9, n)
+    assert distinct < MIN_DISTINCT_INLIERS
+
+
+def test_a_real_copy_that_carries_the_template_is_kept(save):
+    paths = templated_set(save)
+    copy = save("copy.png", crop(templated_photo(1)))
+    n = keypoint_inliers(paths[0], copy)
+    kept, look_alikes = set_aside_templates([(paths[0], copy, 0.95, n)], paths + [copy])
+    assert kept == [(paths[0], copy, 0.95, n)] and look_alikes == []
+
+
+def test_small_sets_are_left_alone(save):
+    paths = templated_set(save, count=MIN_PHOTOS_FOR_TEMPLATES - 1)
+    pair = (paths[0], paths[1], 0.9, keypoint_inliers(paths[0], paths[1]))
+    assert set_aside_templates([pair], paths) == ([pair], [])
+
+
+def test_the_same_pair_gets_the_same_answer_every_time(save):
+    paths = templated_set(save)
+    pair = (paths[2], paths[3], 0.9, keypoint_inliers(paths[2], paths[3]))
+    assert set_aside_templates([pair], paths) == set_aside_templates([pair], list(reversed(paths)))
