@@ -1,0 +1,14 @@
+Winnow
+Copyright 2026 Ranjeeth Burujula
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Winnow builds on software and data made by others. None of it is redistributed in this repository:
+
+- OpenCV 5 (Apache-2.0), including cv2.dnn, img_hash and SIFT.
+- MobileNetV2 (Apache-2.0), from the OpenCV Zoo (huggingface.co/opencv/image_classification_mobilenet).
+  The Dockerfile downloads it at build time and winnow/models/make_embedder.py strips its classifier
+  layer to make the embedder. The weights are not stored in this repository.
+- Imagenette (fast.ai; images from ImageNet), used only for the evaluations in imagenette_exp/.
+  The photos are not included, only file names in the audit results. ImageNet has its own terms of use.
+- boto3 and the AWS SDKs (Apache-2.0).

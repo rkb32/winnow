@@ -150,6 +150,10 @@ The thresholds trade sensitivity for silence: a clear watermark on every photo i
 - `binder_eval/` — an outside test on Jesse Diaz's planted-overlap binder benchmark: 31 of 34 planted pairs found, and 742 false alarms from shared printed templates (see its README)
 - `proposal.md` / `Winnow-OpenCV-2026-Proposal.pdf` — the original competition proposal
 
+## License
+
+Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE) for the third-party software and data Winnow builds on. Contributions are welcome under the same license. Please keep image datasets out of pull requests: file names, pair lists and numbers are fine, but the photos in a benchmark usually belong to someone else.
+
 ## Limitations & future work
 
 - **Duplicate comparison is O(n²)**: every image is hashed against every other image. Fine for hundreds of images, too slow for a real dataset of thousands. At scale this would need an approximate-nearest-neighbor index (e.g. FAISS or Annoy) instead of brute-force pairwise comparison.
