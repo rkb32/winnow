@@ -61,14 +61,42 @@ Precision goes from 4% (31 of 773) to 49% (30 of 61). The 31 flags left outside 
 - **Claude's review was off.** Winnow shows Claude the images only when a scan has 8 findings or fewer. With 773, the "Claude's call" column reads "not reviewed".
 - **Not scored:** duplicates inside the training split, and the benchmark's own screening for reprinted art. Jesse notes his screen is not perfect, so a flag outside the key is worth a look; the strongest ones I checked were template matches.
 
+## Why one-card pairs score low: SIFT's keypoint cap
+
+*Contributed by Jesse Diaz.* Winnow asks SIFT for at most 1000 keypoints per photo (`_sift = cv2.SIFT_create(nfeatures=1000)` in `winnow/semantic.py`), at a 640px working size. A binder page holds nine cards, so each card gets roughly 110 of them, and the strongest keypoints favor printed text and frames. The three missed one-card pairs had the fewest keypoints on the shared card: counting the page with fewer, 34 to 45, against 56 to 161 on the nine one-card pairs that were found. The fixed-camera background check is not the cause: it applied to one of the three and removed one keypoint.
+
+Rerunning `_content_match` uncapped (`nfeatures=0`), same working size, on every planted pair, the 742 false flags from the defaults, and 400 random pairs that share nothing:
+
+| | Cap 1000 (default) | Uncapped |
+|---|---|---|
+| One-card planted pairs | 13 to 109 | 52 to 377 |
+| False flags, median (max) | 36 (72) | 50 (143) |
+| Random unrelated pairs, median (max) | 8 (24) | 13 (133) |
+
+| Smallest keypoint count that flags | Planted found, cap 1000 | Planted found, uncapped | False flags still over, cap 1000 | False flags still over, uncapped | Random unrelated over, uncapped (of 400) |
+|---|---|---|---|---|---|
+| 25 | 31 | 34 | 739 | 740 | 60 |
+| 50 | 26 | 34 | 76 | 374 | 15 |
+| 80 | 21 | 33 | 0 | 22 | 2 |
+| 100 | 16 | 33 | 0 | 5 | 1 |
+
+Uncapped, the planted pairs pull away from the false flags, but unrelated pairs rise too, so the 25-keypoint bar can't stay where it is. Any new bar picked from this table would be in-sample; Imagenette (`imagenette_exp/calibrate_verify.py`) is the place to set it. Uncapped pages average about 3,340 keypoints instead of 1000, and matching one pair takes about 15 ms instead of 2 on an M4 Mac mini. Not tried yet: uncapped together with the shared-template filter.
+
+The highest uncapped false flags put all their keypoints on one pair of Trainer cards with a shared printed design: Super Potion and Super Energy Removal (128 of 143), Reserved Ticket and Mega Turbo (118 of 118), Beedrill Spirit Link and Latios Spirit Link (133 of 133). The Spirit Link pair is close to the same printed card, which the benchmark's screen (one printing per card name, pHash within 10 bits) doesn't exclude, so that one is the benchmark's miss rather than Winnow's.
+
+These numbers come from OpenCV 5.0.0 on macOS rather than the pinned 5.0.0.93 build: planted pairs match this README's counts (P01 reads 22 here, after the fixed-camera check, against 23), and 739 of the 742 false flags clear 25 at the default cap.
+
 ## Files
 
 - `pair_inliers.py`: keypoint matches for every train/val pair, in parallel (about 11 minutes on 5 workers).
 - `score.py`: scores the pairs against `planted_pairs.csv`, writes the flagged-pair list, and with `--templates-out` also scores with shared templates set aside.
 - `winnow_flagged_pairs.csv`: the 773 pairs Winnow flagged before the filter: page A (train), page B (val), which check flagged it, matching keypoints, and Claude's call.
+- `sift_cap.py`: keypoint matches for the planted pairs, the default false flags and a random sample of unrelated pairs, at the default SIFT cap and uncapped (about 2 minutes on 8 workers).
+- `sift_cap.csv`: its output, one row per pair with both counts.
 - `winnow_flagged_pairs_templates_set_aside.csv`: the same 773 pairs after it, with 712 marked "shared template (set aside)" and their template-free keypoint count.
 
 ```
 python binder_eval/pair_inliers.py path/to/binder-overlap-bench-v1 --out pair_inliers.csv
 python binder_eval/score.py path/to/binder-overlap-bench-v1 pair_inliers.csv --templates-out winnow_flagged_pairs_templates_set_aside.csv
+python binder_eval/sift_cap.py path/to/binder-overlap-bench-v1 --out binder_eval/sift_cap.csv
 ```
