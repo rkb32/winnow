@@ -110,6 +110,18 @@ Scaling the filter's bar by the same 3.4x the keypoints grew (1000 to 3,384 per 
 
 At the default bar of 25 that is 33 of 34 planted pairs with 9 flags outside the key (79% precision), against 31 with 33 (48%) at the defaults. The miss is P02. **This is in-sample:** the 3.4x is measured on these pages, every number here is scored against this answer key, and none of it has been checked on real photos. The full run takes about 15 minutes on 8 workers, most of it uncapped.
 
+### On real photos the cap barely matters
+
+The Imagenette calibration ran at 160px, where the cap never binds, so the same comparison was rerun on full-size Imagenette (`imagenette_exp/fullsize_cap.py`, same file names): the 108 hand-verified audit pairs, plus 2,000 random same-class train/val pairs as a false-alarm baseline. At the 640px working size the cap binds on 36% of the photos (median 769 keypoints uncapped, against about 3,384 on a binder page). Pairs at or over 25:
+
+| | Cap 1000 | Uncapped |
+|---|---|---|
+| Real leaks, same photo or same scene (of 76) | 75 | 75 |
+| Look-alikes (of 32) | 10 | 10 |
+| Random same-class pairs (of 2,000) | 8 | 15 |
+
+All 15 random pairs were checked by eye and are different photos. Uncapping only helps at higher bars (at 100: 40 real leaks instead of 31). So on ordinary photos lifting the cap gains nothing at the default bar and roughly doubles the random false alarms; it pays off on busy images where the shared thing is a small part of the frame, like a binder page. Random same-class pairs mostly wouldn't pass the embedding step, so these false alarms overstate what a scan would show. The audit's verdicts were made at 160px; one "same photo" pair (train n03000684_16688 / val n03000684_11672) shows a yellow and a red chainsaw with the same outline and has 21 keypoints at either cap.
+
 ### The filter's answer depends on where the data is unzipped
 
 `set_aside_templates` draws each pair's 40 reference photos with `random.Random(f"{a}|{b}")`, and `a` and `b` are full paths, so the same benchmark in another folder gets different references. Rerun on the same pages reached through a different folder, at cap 1000 the template-free count changed on 667 of the 772 pairs checked and the kept-or-set-aside call flipped on 41, two of them planted (train_022 / val_002 and train_044 / val_057): 31 / 33 above became 29 / 38. The 30 / 31 in "The fix" above is a third draw of the same thing. Uncapped, 373 of 2,627 calls flipped at the bar of 20 (34 / 511 became 34 / 490) and 10 at 68 (33 / 9 became 33 / 5). So "a rerun gives the same answer" holds only from the same folder, and on this set one draw of 40 references moves the result by a few pairs either way. Seeding on something that stays put (paths relative to the scanned folder, or a hash of each file) would make reruns match anywhere, and more references would make any one draw matter less. Nothing in `winnow/` is changed here.
