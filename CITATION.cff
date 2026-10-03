@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use Winnow, please cite it as below."
+title: "Winnow: a dataset quality auditor for computer vision training data"
+type: software
+authors:
+  - family-names: Burujula
+    given-names: Ranjeeth
+license: Apache-2.0
+repository-code: "https://github.com/rkb32/winnow"
+url: "https://d1oc3ay9n04ubj.cloudfront.net/"
+abstract: >-
+  Finds duplicates, train/test leakage, blurry photos and other quality problems in image
+  datasets, using OpenCV 5 and AWS. Built for the OpenCV AI Competition 2026.
+keywords:
+  - computer vision
+  - dataset quality
+  - data leakage
+  - OpenCV

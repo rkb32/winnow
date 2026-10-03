@@ -1,0 +1,18 @@
+# Version bumps are proposals only. A new OpenCV or numpy can change what Winnow flags, so the
+# tests must pass and the Imagenette audit (imagenette_exp/) should be rerun before merging one.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /winnow
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: docker
+    directory: /winnow
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
