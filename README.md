@@ -163,9 +163,13 @@ The thresholds trade sensitivity for silence: a clear watermark on every photo i
 - `binder_eval/` — an outside test on Jesse Diaz's planted-overlap binder benchmark: before the shared-template filter, 31 of 34 planted pairs found and 742 false alarms; after, 30 of 34 and 31 (see its README)
 - `proposal.md` / `Winnow-OpenCV-2026-Proposal.pdf` — the original competition proposal
 
+## Contributing
+
+Bug reports, fixes and outside tests are welcome. Start with the [good first issues](https://github.com/rkb32/winnow/labels/good%20first%20issue) or the [help wanted](https://github.com/rkb32/winnow/labels/help%20wanted) list, and read [CONTRIBUTING.md](CONTRIBUTING.md) first. The shared-template filter came out of an outside benchmark (`binder_eval/`), and that benchmark's author has since sent a follow-up analysis as a pull request. Please keep image datasets out of pull requests: file names, pair lists and numbers are fine, but the photos in a benchmark usually belong to someone else.
+
 ## License
 
-Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE) for the third-party software and data Winnow builds on. Contributions are welcome under the same license. Please keep image datasets out of pull requests: file names, pair lists and numbers are fine, but the photos in a benchmark usually belong to someone else.
+Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE) for the third-party software and data Winnow builds on. Contributions are accepted under the same license.
 
 ## Limitations & future work
 
