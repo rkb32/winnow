@@ -68,8 +68,9 @@ that you do not have the right to share, is a violation.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-kbranjeeth@gmail.com. Security vulnerabilities go through the process in
+reported to the maintainer, @rkb32, or to GitHub through the "Report content"
+option on any issue, comment, or pull request. Security vulnerabilities go
+through the process in
 [SECURITY.md](SECURITY.md) instead.
 All complaints will be reviewed and investigated promptly and fairly.
 
