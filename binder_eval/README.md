@@ -61,14 +61,85 @@ Precision goes from 4% (31 of 773) to 49% (30 of 61). The 31 flags left outside 
 - **Claude's review was off.** Winnow shows Claude the images only when a scan has 8 findings or fewer. With 773, the "Claude's call" column reads "not reviewed".
 - **Not scored:** duplicates inside the training split, and the benchmark's own screening for reprinted art. Jesse notes his screen is not perfect, so a flag outside the key is worth a look; the strongest ones I checked were template matches.
 
+## Why one-card pairs score low: SIFT's keypoint cap
+
+*Contributed by Jesse Diaz.* Winnow asks SIFT for at most 1000 keypoints per photo (`_sift = cv2.SIFT_create(nfeatures=1000)` in `winnow/semantic.py`), at a 640px working size. A binder page holds nine cards, so each card gets roughly 110 of them, and the strongest keypoints favor printed text and frames. The three missed one-card pairs had the fewest keypoints on the shared card: counting the page with fewer, 34 to 45, against 56 to 161 on the nine one-card pairs that were found. The fixed-camera background check is not the cause: it applied to one of the three and removed one keypoint.
+
+Rerunning `_content_match` uncapped (`nfeatures=0`), same working size, on every planted pair, the 742 false flags from the defaults, and 400 random pairs that share nothing:
+
+| | Cap 1000 (default) | Uncapped |
+|---|---|---|
+| One-card planted pairs | 13 to 109 | 52 to 377 |
+| False flags, median (max) | 36 (72) | 50 (143) |
+| Random unrelated pairs, median (max) | 8 (24) | 13 (133) |
+
+| Smallest keypoint count that flags | Planted found, cap 1000 | Planted found, uncapped | False flags still over, cap 1000 | False flags still over, uncapped | Random unrelated over, uncapped (of 400) |
+|---|---|---|---|---|---|
+| 25 | 31 | 34 | 739 | 740 | 60 |
+| 50 | 26 | 34 | 76 | 374 | 15 |
+| 80 | 21 | 33 | 0 | 22 | 2 |
+| 100 | 16 | 33 | 0 | 5 | 1 |
+
+Uncapped, the planted pairs pull away from the false flags, but unrelated pairs rise too, so the 25-keypoint bar can't stay where it is. Any new bar picked from this table would be in-sample; Imagenette (`imagenette_exp/calibrate_verify.py`) is the place to set it. Uncapped pages average about 3,380 keypoints instead of 1000, and matching one pair takes about 15 ms instead of 2 on an M4 Mac mini.
+
+The highest uncapped false flags put all their keypoints on one pair of Trainer cards with a shared printed design: Super Potion and Super Energy Removal (128 of 143), Reserved Ticket and Mega Turbo (118 of 118), Beedrill Spirit Link and Latios Spirit Link (133 of 133). The Spirit Link pair is close to the same printed card, which the benchmark's screen (one printing per card name, pHash within 10 bits) doesn't exclude, so that one is the benchmark's miss rather than Winnow's.
+
+These numbers come from the pinned `opencv-contrib-python-headless==5.0.0.93` on an M4 Mac mini (plain `opencv-python` 5.0.0.93 gives the same count on every pair). Planted pairs match this README's counts (P01 reads 22 here, after the fixed-camera check, against 23), and 739 of the 742 false flags clear 25 at the default cap. Over all 14,400 pairs this machine flags 745 outside the key at the defaults, against the 742 above: 6 more, and 3 of the 742 missing.
+
+### Uncapped together with the shared-template filter
+
+All 14,400 pairs at both caps, with every pair over 25 run through `set_aside_templates` using the same SIFT setting, and the filter's own settings unchanged (`sift_cap_templates.py`). The 4 pairs the perceptual hash finds skip the filter, as in `scan.py`. Each cell is planted pairs found (of 34) / flags outside the key (of 14,366):
+
+| Smallest keypoint count that flags | Cap 1000 | Cap 1000, templates set aside | Uncapped | Uncapped, templates set aside |
+|---|---|---|---|---|
+| 25 | 31 / 745 | 31 / 33 | 34 / 2,597 | 34 / 511 |
+| 50 | 26 / 76 | 26 / 7 | 34 / 722 | 34 / 211 |
+| 80 | 21 / 0 | 21 / 0 | 33 / 100 | 33 / 71 |
+| 100 | 16 / 0 | 16 / 0 | 33 / 25 | 33 / 23 |
+
+As it stands, the filter does much less uncapped. Its bar of 20 template-free keypoints was set at cap 1000, and uncapped every count grows with the keypoints: planted pairs keep 42 or more template-free keypoints (P02, the 52-keypoint one-card pair, is the 42; the next lowest is 109), while the pairs outside the key keep a median of 9, nine in ten keep 26 or fewer, and none keeps more than 85.
+
+Scaling the filter's bar by the same 3.4x the keypoints grew (1000 to 3,384 per page, so 20 becomes 68), a ratio of keypoint counts that never looks at the answer key:
+
+| Smallest keypoint count that flags | Uncapped, templates set aside at 68 |
+|---|---|
+| 25 | 33 / 9 |
+| 50 | 33 / 9 |
+| 80 | 33 / 8 |
+| 100 | 33 / 4 |
+
+At the default bar of 25 that is 33 of 34 planted pairs with 9 flags outside the key (79% precision), against 31 with 33 (48%) at the defaults. The miss is P02. **This is in-sample:** the 3.4x is measured on these pages, every number here is scored against this answer key, and none of it has been checked on real photos. The full run takes about 15 minutes on 8 workers, most of it uncapped.
+
+### On real photos the cap barely matters
+
+The Imagenette calibration ran at 160px, where the cap never binds, so the same comparison was rerun on full-size Imagenette (`imagenette_exp/fullsize_cap.py`, same file names): the 108 hand-verified audit pairs, plus 2,000 random same-class train/val pairs as a false-alarm baseline. At the 640px working size the cap binds on 36% of the photos (median 769 keypoints uncapped, against about 3,384 on a binder page). Pairs at or over 25:
+
+| | Cap 1000 | Uncapped |
+|---|---|---|
+| Real leaks, same photo or same scene (of 76) | 75 | 75 |
+| Look-alikes (of 32) | 10 | 10 |
+| Random same-class pairs (of 2,000) | 8 | 15 |
+
+All 15 random pairs were checked by eye and are different photos. Uncapping only helps at higher bars (at 100: 40 real leaks instead of 31). So on ordinary photos lifting the cap gains nothing at the default bar and roughly doubles the random false alarms; it pays off on busy images where the shared thing is a small part of the frame, like a binder page. Random same-class pairs mostly wouldn't pass the embedding step, so these false alarms overstate what a scan would show. The audit's verdicts were made at 160px; one "same photo" pair (train n03000684_16688 / val n03000684_11672) shows a yellow and a red chainsaw with the same outline and has 21 keypoints at either cap.
+
+### The filter's answer depends on where the data is unzipped
+
+`set_aside_templates` draws each pair's 40 reference photos with `random.Random(f"{a}|{b}")`, and `a` and `b` are full paths, so the same benchmark in another folder gets different references. Rerun on the same pages reached through a different folder, at cap 1000 the template-free count changed on 667 of the 772 pairs checked and the kept-or-set-aside call flipped on 41, two of them planted (train_022 / val_002 and train_044 / val_057): 31 / 33 above became 29 / 38. The 30 / 31 in "The fix" above is a third draw of the same thing. Uncapped, 373 of 2,627 calls flipped at the bar of 20 (34 / 511 became 34 / 490) and 10 at 68 (33 / 9 became 33 / 5). So "a rerun gives the same answer" holds only from the same folder, and on this set one draw of 40 references moves the result by a few pairs either way. Seeding on something that stays put (paths relative to the scanned folder, or a hash of each file) would make reruns match anywhere, and more references would make any one draw matter less. Nothing in `winnow/` is changed here.
+
 ## Files
 
 - `pair_inliers.py`: keypoint matches for every train/val pair, in parallel (about 11 minutes on 5 workers).
 - `score.py`: scores the pairs against `planted_pairs.csv`, writes the flagged-pair list, and with `--templates-out` also scores with shared templates set aside.
 - `winnow_flagged_pairs.csv`: the 773 pairs Winnow flagged before the filter: page A (train), page B (val), which check flagged it, matching keypoints, and Claude's call.
 - `winnow_flagged_pairs_templates_set_aside.csv`: the same 773 pairs after it, with 712 marked "shared template (set aside)" and their template-free keypoint count.
+- `sift_cap.py`: keypoint matches for the planted pairs, the default false flags and a random sample of unrelated pairs, at the default SIFT cap and uncapped (about 2 minutes on 8 workers).
+- `sift_cap.csv`: its output, one row per pair with both counts.
+- `sift_cap_templates.py`: keypoint matches for all 14,400 pairs at both caps, the template filter on every pair over 25, and the flags at bars 25 to 100 with and without it (about 15 minutes on 8 workers).
+- `sift_cap_templates.csv`: its output, one row for every planted pair and every pair over 25 at either cap, with keypoint and template-free counts at both caps.
 
 ```
 python binder_eval/pair_inliers.py path/to/binder-overlap-bench-v1 --out pair_inliers.csv
 python binder_eval/score.py path/to/binder-overlap-bench-v1 pair_inliers.csv --templates-out winnow_flagged_pairs_templates_set_aside.csv
+python binder_eval/sift_cap.py path/to/binder-overlap-bench-v1 --out binder_eval/sift_cap.csv
+python binder_eval/sift_cap_templates.py path/to/binder-overlap-bench-v1 --out binder_eval/sift_cap_templates.csv
 ```
