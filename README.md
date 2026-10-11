@@ -1,10 +1,14 @@
 # Winnow
 
+[![tests](https://github.com/rkb32/winnow/actions/workflows/test.yml/badge.svg)](https://github.com/rkb32/winnow/actions/workflows/test.yml)
+
 A data-quality auditor for computer vision training datasets. Built for the [OpenCV AI Competition 2026](https://opencv26.devpost.com/) (OpenCV 5 + AWS).
 
 Point it at a folder of training images and it flags the things that quietly corrupt a model before anyone notices: near-duplicate photos, images duplicated across train/test splits (leakage), a test set that looks nothing like the training set, photos taken seconds apart on both sides of a split, blurry images, a watermark or frame shared across the set, photos whose files say they are AI-generated or from a stock agency, label mistakes, and EXIF orientation tags that don't match how an image actually displays (which shifts bounding boxes without warning). It never stores or forwards the images themselves, everything runs read-in-place.
 
 **Try it:** https://d1oc3ay9n04ubj.cloudfront.net/ — upload up to 20 photos and get a report in about a minute, no install or account needed.
+
+**Key results** (details and limits in [Evaluation](#evaluation)): caught 73 of 75 planted leaks, vs 35 for perceptual hashing alone; audited 37.2M pairs in 34 minutes; 76 leaks confirmed by AI reviewers in Imagenette's split.
 
 ## What it catches
 
